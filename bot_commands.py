@@ -18,7 +18,7 @@ db = db_handler()
 
 bot.remove_webhook()
 time.sleep(1)
-bot.set_webhook(url="https://410446fe.ngrok.io/{}".format(secret))
+bot.set_webhook(url="https://ff8b3859.ngrok.io/{}".format(secret))
 
 app = Flask(__name__)
 
@@ -57,7 +57,7 @@ def admin_handler(func):
 def my_games(chat_id, list_of_games):
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in list_of_games:
-        itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data=i[0])
+        itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="ief"+str(i[0]))
         markup.row(itembtn)
     bot.send_message(chat_id, "Списко игр:", reply_markup=markup)
 
@@ -213,12 +213,13 @@ def indb(db):
         l.append(i[0])
     return l
 
-@bot.callback_query_handler(lambda call: True if int(call.data) in indb(db.query_with_fetchall([call.from_user.id])) else False)
+#@bot.callback_query_handler(lambda call: True if int(call.data) in indb(db.query_with_fetchall([call.from_user.id])) else False)
 #@bot.callback_query_handler(regexp='(15222)\d{5}')
+@bot.callback_query_handler(func=lambda call: call.data[0:3] == 'ief')
 def properties(call):
     chat_id = call.message.chat.id
     mess_id = call.message.message_id
-    property = db.query_with_fetchall2([call.data])[0]
+    property = db.query_with_fetchall2([call.data[3:]])[0]
     markup = types.InlineKeyboardMarkup(1)
     btn = types.InlineKeyboardButton("✏️", callback_data="editname")
     markup.row(btn)
