@@ -222,6 +222,14 @@ def properties(call):
     markup.row(btn, btn1)
     bot.send_message(chat_id, "Название игры: {},\nКоличество уровней: {},\nДата начала игры: {}".format(property[1], property[2], property[3]), reply_markup=markup)
 
+# ------------------------------------------------------------------------------------------------------
+# Если нажато "Back", то просто удалить предыдущее сообщение
+
+@bot.callback_query_handler(func=lambda call: call.data == 'back')
+def back_mess(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    bot.delete_message(chat_id, mess)
 
 
 # ------------------------------------------------------------------------------------------------------
