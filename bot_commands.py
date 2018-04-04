@@ -18,7 +18,7 @@ db = db_handler()
 
 bot.remove_webhook()
 time.sleep(1)
-bot.set_webhook(url="https://ff8b3859.ngrok.io/{}".format(secret))
+bot.set_webhook(url="https://298e6fe0.ngrok.io/{}".format(secret))
 
 app = Flask(__name__)
 
@@ -207,26 +207,20 @@ def anew(call):
 # Блок вывода информации о выбранной игре
 
 
-def indb(db):
-    l=[]
-    for i in db:
-        l.append(i[0])
-    return l
+def info(m):
+    if m.text == "✏️ изменить":
+        print("up")
 
-#@bot.callback_query_handler(lambda call: True if int(call.data) in indb(db.query_with_fetchall([call.from_user.id])) else False)
-#@bot.callback_query_handler(regexp='(15222)\d{5}')
+
 @bot.callback_query_handler(func=lambda call: call.data[0:3] == 'ief')
 def properties(call):
     chat_id = call.message.chat.id
-    mess_id = call.message.message_id
     property = db.query_with_fetchall2([call.data[3:]])[0]
     markup = types.InlineKeyboardMarkup(1)
-    btn = types.InlineKeyboardButton("✏️", callback_data="editname")
-    markup.row(btn)
-    bot.send_message(chat_id, "Название игры: {}".format(property[1]), reply_markup=markup)
-    bot.send_message(chat_id, "Количество уровней: {}".format(property[2]), reply_markup=markup)
-    bot.send_message(chat_id, "Дата начала игры: {}".format(property[3]), reply_markup=markup)
-
+    btn = types.InlineKeyboardButton("✏️", callback_data="editproperties")
+    btn1 = types.InlineKeyboardButton("⬅️", callback_data="back")
+    markup.row(btn, btn1)
+    bot.send_message(chat_id, "Название игры: {},\nКоличество уровней: {},\nДата начала игры: {}".format(property[1], property[2], property[3]), reply_markup=markup)
 
 
 
