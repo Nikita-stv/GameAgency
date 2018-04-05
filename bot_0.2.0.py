@@ -3,7 +3,7 @@ from telebot import types
 from datetime import datetime
 
 
-token = "245704344:AAFRsXlQJA_HMWF6RQ7zdXvjkASHqlnexN0"
+token = "token"
 bot = telebot.TeleBot(token)
 
 bot.get_updates(allowed_updates=[""])       # Получать весь массив параметров обновления
