@@ -65,6 +65,14 @@ games = []
 com_mess = []
 
 # -----------------------------------------------------------------------------------------------------
+#Работы с КАНАЛОМ
+
+@bot.channel_post_handler(func=lambda c:True)
+def channel_handler(message):
+    print("up")
+    bot.send_message(chat_id="@shpak_chann", text="Сообщение от бота")
+
+# -----------------------------------------------------------------------------------------------------
 # Декоратор для проверки на административные права
 
 def admin_handler(func):
@@ -76,21 +84,7 @@ def admin_handler(func):
     return wrapper
 
 # -----------------------------------------------------------------------------------------------------
-# Вывод списка игр для текущего администратора
-
-def my_games(chat_id, list_of_games, send=True, mess=None):
-    markup = types.InlineKeyboardMarkup(row_width=3)
-    for i in list_of_games:
-        itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="list"+str(i[0]))
-        markup.row(itembtn)
-    if send:
-        bot.send_message(chat_id, "Списко игр:", reply_markup=markup)
-    else:
-        bot.edit_message_text(chat_id=chat_id, text="Списко игр:", message_id=mess, reply_markup=markup)
-
-# -----------------------------------------------------------------------------------------------------
-
-# Функция ответа на команду start с выводом InlineKeyboard
+# Функция ответа на команду start с выводом InlineKeyboard. Пример.
 
 @bot.message_handler(commands=['start'])
 def start_handler(message):
@@ -101,50 +95,38 @@ def start_handler(message):
     markup.row(itembtnA, itembtnB)
     bot.send_message(chat_id, "Задание №1 \n Текст задания.", reply_markup=markup)
 
-@bot.channel_post_handler(func=lambda c:True)
-def channel_handler(message):
-    print("up")
-    bot.send_message(chat_id="@shpak_chann", text="Сообщение от бота")
-
-
-# -----------------------------------------------------------------------------------------------------
-
-# Вывод списка игр созданных текущим пользователем (администратором)
-
-@bot.message_handler(commands=['my_games'])
-@admin_handler
-def mygame_handler(message):
-    del com_mess[:]
-    del games[:]
-    chat_id = message.chat.id
-    list_of_games = db.query_with_fetchall([message.from_user.id])
-    my_games(chat_id, list_of_games)
-
 
 # ------------------------------------------------------------------------------------------------------
+# Формирование новой игры
+
+def setname(message):
+    chat_id = message.chat.id
+    text = message.text
+    games.append(text)
+    sent = bot.send_message(chat_id, "Введите количество уровней:")
+    bot.register_next_step_handler(message=sent, callback=get_calendar)
+
 @bot.message_handler(commands=['new_game'])
 @admin_handler
 def new_handler(message):
-    del com_mess[:]
     del games[:]
     chat_id = message.chat.id
-    mess_id = message.message_id
-    bot.send_message(chat_id, "Введите название игры:")
-    com_mess.append(mess_id)
+    sent = bot.send_message(chat_id, "Введите название игры:")
+    bot.register_next_step_handler(message=sent, callback=setname)
 
 
 # -----------------------------------------------------------------------------------------------------
 # Блок для вывода интерактивного календаря для выбора даты игры и обработки ответа пользователя, время начала игры 00:00
 
-
 current_shown_dates={}
-@bot.message_handler(commands=['calendar'])
+#@bot.message_handler(commands=['calendar'])
 def get_calendar(message):
+    games.append(message.text)
     now = datetime.now() #Current date
     chat_id = message.chat.id
     date = (now.year,now.month)
     current_shown_dates[chat_id] = date #Saving the current date in a dict
-    markup= create_calendar(now.year,now.month)
+    markup = create_calendar(now.year,now.month)
     bot.send_message(message.chat.id, "Укажите дату начала игры:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'next-month')
@@ -223,21 +205,40 @@ def get_day(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'anew')
 def anew(call):
-    del com_mess[:]
     del games[:]
     chat_id = call.message.chat.id
-    mess_id = call.message.message_id
-    bot.send_message(chat_id, "Введите название игры:")
-    com_mess.append(mess_id)
+    sent = bot.send_message(chat_id, "Введите название игры:")
+    bot.register_next_step_handler(message=sent, callback=setname)
+
+
+# -----------------------------------------------------------------------------------------------------
+# Вывод списка игр для текущего администратора
+
+def my_games(chat_id, list_of_games, send=True, mess=None):
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    for i in list_of_games:
+        itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="list"+str(i[0]))
+        markup.row(itembtn)
+    if send:
+        bot.send_message(chat_id, "Списко игр:", reply_markup=markup)
+    else:
+        bot.edit_message_text(chat_id=chat_id, text="Списко игр:", message_id=mess, reply_markup=markup)
+
+# -----------------------------------------------------------------------------------------------------
+# Вывод списка игр созданных текущим пользователем (администратором)
+
+@bot.message_handler(commands=['my_games'])
+@admin_handler
+def mygame_handler(message):
+    del com_mess[:]
+    del games[:]
+    chat_id = message.chat.id
+    list_of_games = db.query_with_fetchall([message.from_user.id])
+    my_games(chat_id, list_of_games)
+
 
 # ------------------------------------------------------------------------------------------------------
 # Блок вывода информации о выбранной игре
-
-
-def info(m):
-    if m.text == "✏️ изменить":
-        print("up")
-
 
 @bot.callback_query_handler(func=lambda call: call.data[0:4] == 'list')
 def properties(call):
@@ -285,39 +286,22 @@ def edit_mess(call):
 # ------------------------------------------------------------------------------------------------------
 #
 
+def rename(message):
+    bot.send_message(message.chat.id, 'Привет, {name}. Рад тебя видеть.'.format(name=message.text))
+
+
+
 @bot.callback_query_handler(func=lambda call: call.data[0:5] == 'name1')
 def edit_name(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     #inline_mess = call.inline_message_id
     #name = db.query_with_fetchall2([call.data[4:]])[0][1]
-    bot.edit_message_text(text="Введите новое название игры:", chat_id=chat_id, message_id=mess)
+    sent = bot.edit_message_text(text="Введите новое название игры:", chat_id=chat_id, message_id=mess, reply_markup=None)
 
-    pass    # обработка введенного текста
+    bot.register_next_step_handler(message=sent, callback=rename)
 
 # ------------------------------------------------------------------------------------------------------
-# Переделать с использование lambda: проверка на условие
-
-@bot.message_handler(content_types=['text'])
-def set_game_handler(message):
-    chat_id = message.chat.id
-    mess_id = message.message_id
-    if len(com_mess) == 1:
-        text = message.text.lower()
-        games.append(text)
-        bot.send_message(chat_id, "Введите количество уровней:")
-        com_mess.append(mess_id)
-    elif len(com_mess) == 2:
-        text = message.text
-        try:
-            text = int(text)
-            games.append(text)
-            get_calendar(message)
-            com_mess.append(mess_id)
-        except ValueError:
-            bot.send_message(chat_id, "Введите количество уровней:")
-    elif len(com_mess) == 3:
-        del com_mess[:]
 
 
 # ------------------------------------------------------------------------------------------------------
