@@ -6,7 +6,7 @@ import time
 import re
 
 secret = "GUID"
-bot = telebot.TeleBot('245704344:AAFRsXlQJA_HMWF6RQ7zdXvjkASHqlnexN0', threaded=False)
+bot = telebot.TeleBot('token', threaded=False)
 
 
 #-----------------------------------------------------------------------------------------------------
