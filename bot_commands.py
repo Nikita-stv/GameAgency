@@ -18,7 +18,7 @@ db = db_handler()
 
 bot.remove_webhook()
 time.sleep(1)
-bot.set_webhook(url="https://298e6fe0.ngrok.io/{}".format(secret))
+bot.set_webhook(url="https://64d1a6b4.ngrok.io/{}".format(secret))
 
 app = Flask(__name__)
 
@@ -217,10 +217,10 @@ def properties(call):
     chat_id = call.message.chat.id
     property = db.query_with_fetchall2([call.data[3:]])[0]
     markup = types.InlineKeyboardMarkup(1)
-    btn = types.InlineKeyboardButton("✏️", callback_data="editproperties")
+    btn = types.InlineKeyboardButton("✏️", callback_data="edit"+str(property[0]))
     btn1 = types.InlineKeyboardButton("⬅️", callback_data="back")
     markup.row(btn, btn1)
-    bot.send_message(chat_id, "Название игры: {},\nКоличество уровней: {},\nДата начала игры: {}".format(property[1], property[2], property[3]), reply_markup=markup)
+    bot.send_message(chat_id, "Название игры: *{}*,\nКоличество уровней: *{}*,\nДата начала игры: *{}*".format(property[1], property[2], property[3]), reply_markup=markup, parse_mode="Markdown")
 
 # ------------------------------------------------------------------------------------------------------
 # Если нажато "Back", то просто удалить предыдущее сообщение
@@ -231,6 +231,24 @@ def back_mess(call):
     mess = call.message.message_id
     bot.delete_message(chat_id, mess)
 
+# ------------------------------------------------------------------------------------------------------
+# Вывод модуля редактирования параметров игру (путем изменения InlineKeyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data[0:5] == 'edit1')
+def edit_mess(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    inline_mess = call.inline_message_id
+    name = db.query_with_fetchall2([call.data[4:]])[0][1]
+    btn = types.InlineKeyboardButton("Редактировать название", callback_data="name" + call.data[4:])
+    btn1 = types.InlineKeyboardButton("Добавить описание к игре", callback_data="description" + call.data[4:])
+    btn2 = types.InlineKeyboardButton("Изменить дату", callback_data="datetime" + call.data[4:])
+    btn3 = types.InlineKeyboardButton("Редактировать уровни", callback_data="levels" + call.data[4:])
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn, btn1, btn2, btn3)
+    #bot.send_message(chat_id, text=name, reply_markup=markup)
+    #bot.edit_message_text(chat_id=chat_id, text=name, message_id=mess, reply_markup=markup)
+    bot.edit_message_reply_markup(chat_id=chat_id, message_id=mess, inline_message_id=inline_mess, reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
 # Переделать с использование lambda: проверка на условие
