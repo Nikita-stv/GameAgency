@@ -187,12 +187,10 @@ def indb(db):
 
 
 if __name__ == '__main__':
-    #print(db_handler().search_admin())
-    #games = [12, "game", "2018-03-15 00:00:00", 15, 999]
 
     print(db_handler().query_with_fetchall([235987482]))
 
     print(db_handler().query_with_fetchall2([1522305332]))
 
-    #print(lambda call: True if call in indb(db_handler().query_with_fetchall([235987482])) else False)
+
 

@@ -5,24 +5,48 @@ from telebot import types
 import time
 from db_handler import db_handler
 from telegramcalendar import create_calendar
-import itertools
+from configparser import ConfigParser
 
-secret = "GUID"
-bot = telebot.TeleBot('245704344:AAFRsXlQJA_HMWF6RQ7zdXvjkASHqlnexN0', threaded=False)
 
+#--------------------------------------------------------------------------------------------------
+
+def read_config(filename='config.ini', section='bot'):
+    """ Read database configuration file and return a dictionary object
+    :param filename: name of the configuration file
+    :param section: section of database configuration
+    :return: a dictionary of database parameters
+    """
+    # create parser and read ini configuration file
+    parser = ConfigParser()
+    parser.read(filename)
+
+    # get section, default to mysql
+    cf = {}
+    if parser.has_section(section):
+        items = parser.items(section)
+        for item in items:
+            cf[item[0]] = item[1]
+    else:
+        raise Exception('{0} not found in the {1} file'.format(section, filename))
+
+    return cf
+
+#-----------------------------------------------------------------------------------------------------
+cf = read_config()
+
+bot = telebot.TeleBot(cf['token'], threaded=False)
 db = db_handler()
-
 
 #-----------------------------------------------------------------------------------------------------
 # Webhook
 
 bot.remove_webhook()
 time.sleep(1)
-bot.set_webhook(url="https://64d1a6b4.ngrok.io/{}".format(secret))
+bot.set_webhook(url="{}/{}".format(cf['url'], cf['secret']))
 
 app = Flask(__name__)
 
-@app.route('/{}'.format(secret), methods=["POST"])
+@app.route('/{}'.format(cf['secret']), methods=["POST"])
 def webhook():
     bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     print("Message")
@@ -224,7 +248,6 @@ def properties(call):
     btn = types.InlineKeyboardButton("✏️", callback_data="edit"+str(property[0]))
     btn1 = types.InlineKeyboardButton("⬅️", callback_data="back"+str(property[0]))
     markup.row(btn, btn1)
-    #bot.send_message(chat_id, "Название игры: *{}*,\nКоличество уровней: *{}*,\nДата начала игры: *{}*".format(property[1], property[2], property[3]), reply_markup=markup, parse_mode="Markdown")
     bot.edit_message_text(chat_id=chat_id, message_id=mess,
                      text="Название игры: *{}*,\nКоличество уровней: *{}*,\nДата начала игры: *{}*".format(property[1],
                                                                                                       property[2],
@@ -239,7 +262,6 @@ def properties(call):
 def back_mess(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    #properties(call)
     list_of_games = db.query_with_fetchall([call.from_user.id])
     my_games(chat_id, list_of_games, send=False, mess=mess)
 
@@ -251,15 +273,13 @@ def edit_mess(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     inline_mess = call.inline_message_id
-    #name = db.query_with_fetchall2([call.data[4:]])[0][1]
     btn = types.InlineKeyboardButton("Редактировать название", callback_data="name" + call.data[4:])
     btn1 = types.InlineKeyboardButton("Добавить описание к игре", callback_data="description" + call.data[4:])
     btn2 = types.InlineKeyboardButton("Изменить дату", callback_data="datetime" + call.data[4:])
     btn3 = types.InlineKeyboardButton("Редактировать уровни", callback_data="levels" + call.data[4:])
+    btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
     markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn, btn1, btn2, btn3)
-    #bot.send_message(chat_id, text=name, reply_markup=markup)
-    #bot.edit_message_text(chat_id=chat_id, text=name, message_id=mess, reply_markup=markup)
+    markup.add(btn, btn1, btn2, btn3, btn4)
     bot.edit_message_reply_markup(chat_id=chat_id, message_id=mess, inline_message_id=inline_mess, reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
