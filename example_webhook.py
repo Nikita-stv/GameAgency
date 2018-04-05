@@ -4,7 +4,7 @@ from telebot import types
 import time
 
 secret = "GUID"
-bot = telebot.TeleBot('245704344:AAFRsXlQJA_HMWF6RQ7zdXvjkASHqlnexN0', threaded=False)
+bot = telebot.TeleBot('token', threaded=False)
 
 bot.remove_webhook()
 time.sleep(1)
