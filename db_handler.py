@@ -177,6 +177,21 @@ class db_handler:
             cursor.close()
             conn.close()
 
+    def update_name(self, name, id_game):
+        query = "UPDATE list_of_games SET name=%s WHERE id=%s"
+        arg = (name, id_game)
+        try:
+            db_config = self.read_db_config()
+            conn = MySQLConnection(**db_config)
+            cursor = conn.cursor()
+            cursor.execute(query, arg)
+            conn.commit()
+        except Error as e:
+            print('Error:', e)
+        finally:
+            cursor.close()
+            conn.close()
+
 
 
 def indb(db):
@@ -188,9 +203,10 @@ def indb(db):
 
 if __name__ == '__main__':
 
-    print(db_handler().query_with_fetchall([235987482]))
+    #print(db_handler().query_with_fetchall([235987482]))
 
-    print(db_handler().query_with_fetchall2([1522305332]))
+    #print(db_handler().query_with_fetchall2([1522305332]))
 
+    db_handler().update_name(name='UPDATE',id_game=1522305332)
 
 

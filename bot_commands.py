@@ -56,13 +56,15 @@ def webhook():
 # -----------------------------------------------------------------------------------------------------
 # Блок с параметрами
 
-progress = {0: 0}
-answer = {1: ['кот', 'кошка', 'cat'], 2: ['дуб'], 3: ['рубин', 'изумруд']}  # вручную указанные ответы
-tasks = {1: 'Кто такой Матроскин?', 2: 'Какое дерево имеет желуди?', 3: 'Красный или зеленый драгоценный камень.'}
+#progress = {0: 0}
+#answer = {1: ['кот', 'кошка', 'cat'], 2: ['дуб'], 3: ['рубин', 'изумруд']}  # вручную указанные ответы
+#tasks = {1: 'Кто такой Матроскин?', 2: 'Какое дерево имеет желуди?', 3: 'Красный или зеленый драгоценный камень.'}
 
-tasks_id = []
+#tasks_id = []
 games = []
-com_mess = []
+#com_mess = []
+id_game = 0
+
 
 # -----------------------------------------------------------------------------------------------------
 #Работы с КАНАЛОМ
@@ -230,7 +232,7 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
 @bot.message_handler(commands=['my_games'])
 @admin_handler
 def mygame_handler(message):
-    del com_mess[:]
+    #del com_mess[:]
     del games[:]
     chat_id = message.chat.id
     list_of_games = db.query_with_fetchall([message.from_user.id])
@@ -284,21 +286,25 @@ def edit_mess(call):
     bot.edit_message_reply_markup(chat_id=chat_id, message_id=mess, inline_message_id=inline_mess, reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
-#
+# Переименование игр
+
 
 def rename(message):
-    bot.send_message(message.chat.id, 'Привет, {name}. Рад тебя видеть.'.format(name=message.text))
-
+    chat_id = message.chat.id
+    db.update_name(message.text, id_game)
+    btn = types.InlineKeyboardButton("Далее", callback_data="list" + id_game)
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data[0:5] == 'name1')
 def edit_name(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    #inline_mess = call.inline_message_id
-    #name = db.query_with_fetchall2([call.data[4:]])[0][1]
+    global id_game
+    id_game = call.data[4:]
     sent = bot.edit_message_text(text="Введите новое название игры:", chat_id=chat_id, message_id=mess, reply_markup=None)
-
     bot.register_next_step_handler(message=sent, callback=rename)
 
 # ------------------------------------------------------------------------------------------------------
