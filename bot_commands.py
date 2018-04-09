@@ -56,13 +56,7 @@ def webhook():
 # -----------------------------------------------------------------------------------------------------
 # Блок с параметрами
 
-#progress = {0: 0}
-#answer = {1: ['кот', 'кошка', 'cat'], 2: ['дуб'], 3: ['рубин', 'изумруд']}  # вручную указанные ответы
-#tasks = {1: 'Кто такой Матроскин?', 2: 'Какое дерево имеет желуди?', 3: 'Красный или зеленый драгоценный камень.'}
-
-#tasks_id = []
 games = []
-#com_mess = []
 id_game = 0
 
 
@@ -122,6 +116,7 @@ def new_handler(message):
 
 current_shown_dates={}
 #@bot.message_handler(commands=['calendar'])
+
 def get_calendar(message):
     games.append(message.text)
     now = datetime.now() #Current date
@@ -174,20 +169,22 @@ def get_day(call):
     chat_id = call.message.chat.id
     saved_date = current_shown_dates.get(chat_id)
     if(saved_date is not None):
-        day=call.data[13:]
+        day = call.data[13:]
         date = datetime(int(saved_date[0]),int(saved_date[1]),int(day),0,0,0)
+        if len(games) > 1:                          # формирование даты для новой игры
+            games.append(str(date))                 # записываем дату проведения во временный список
+            games.insert(0, int(time.time()))       # формируем id игры
+            games.append(call.from_user.id)         # записываем владельца созданной игры
 
-        games.append(str(date))                 # записываем дату проведения во временный список
-        games.insert(0, int(time.time()))       # формируем id игры
-        games.append(call.from_user.id)         # записываем владельца созданной игры
-
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        itembtnA = types.InlineKeyboardButton("Создать", callback_data="create")
-        itembtnB = types.InlineKeyboardButton("Ввести заново", callback_data="anew")
-        markup.row(itembtnA, itembtnB)
-        bot.send_message(chat_id, "Название игры: {}\nКоличество уровней: {}\nДата начала игры: {}".format(games[1], games[2], games[3]),
-                         reply_markup=markup)
-        bot.answer_callback_query(call.id, text="")
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            itembtnA = types.InlineKeyboardButton("Создать", callback_data="create")
+            itembtnB = types.InlineKeyboardButton("Ввести заново", callback_data="anew")
+            markup.row(itembtnA, itembtnB)
+            bot.send_message(chat_id, "Название игры: {}\nКоличество уровней: {}\nДата начала игры: {}".format(games[1], games[2], games[3]),
+                             reply_markup=markup)
+            bot.answer_callback_query(call.id, text="")
+        else:                                       # редактирование даты игры
+            update_date(call.message, date)
     else:
         #Do something to inform of the error
         pass
@@ -232,7 +229,6 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
 @bot.message_handler(commands=['my_games'])
 @admin_handler
 def mygame_handler(message):
-    #del com_mess[:]
     del games[:]
     chat_id = message.chat.id
     list_of_games = db.query_with_fetchall([message.from_user.id])
@@ -288,7 +284,6 @@ def edit_mess(call):
 # ------------------------------------------------------------------------------------------------------
 # Переименование игр
 
-
 def rename(message):
     chat_id = message.chat.id
     db.update_name(message.text, id_game)
@@ -299,7 +294,7 @@ def rename(message):
 
 
 @bot.callback_query_handler(func=lambda call: call.data[0:5] == 'name1')
-def edit_name(call):
+def update_name(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     global id_game
@@ -308,6 +303,22 @@ def edit_name(call):
     bot.register_next_step_handler(message=sent, callback=rename)
 
 # ------------------------------------------------------------------------------------------------------
+# Изменение даты игры
+
+def update_date(message, date):
+    chat_id = message.chat.id
+    db.update_date(date, id_game)
+    btn = types.InlineKeyboardButton("Далее", callback_data="list" + id_game)
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    bot.send_message(chat_id=chat_id, text=date, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data[0:8] == 'datetime')
+def update_day(call):
+    global id_game
+    id_game = call.data[8:]
+    get_calendar(call.message)
 
 
 # ------------------------------------------------------------------------------------------------------
