@@ -159,7 +159,7 @@ class db_handler:
             conn.close()
 
     def insert_games(self, game):
-        query = "INSERT INTO list_of_games(id,name,number_of_levels,date,owner) VALUES(%s,%s,%s,%s,%s)"
+        query = "INSERT INTO list_of_games(id,name,description, number_of_levels,date,owner) VALUES(%s,%s,%s,%s,%s,%s)"
         #game = tuple(game)
         arg = []
         tup = tuple(item for item in game)
@@ -177,6 +177,9 @@ class db_handler:
             cursor.close()
             conn.close()
 
+# ____________________________________________________________________________________________
+# Блок внесения изменений в базу
+
     def update_name(self, name, id_game):
         query = "UPDATE list_of_games SET name=%s WHERE id=%s"
         arg = (name, id_game)
@@ -193,6 +196,21 @@ class db_handler:
             conn.close()
 
 
+    def update_dscr(self, dscr, id_game):
+        query = "UPDATE list_of_games SET description=%s WHERE id=%s"
+        arg = (dscr, id_game)
+        try:
+            db_config = self.read_db_config()
+            conn = MySQLConnection(**db_config)
+            cursor = conn.cursor()
+            cursor.execute(query, arg)
+            conn.commit()
+        except Error as e:
+            print('Error:', e)
+        finally:
+            cursor.close()
+            conn.close()
+
     def update_date(self, date, id_game):
         query = "UPDATE list_of_games SET date=%s WHERE id=%s"
         arg = (date, id_game)
@@ -208,6 +226,23 @@ class db_handler:
             cursor.close()
             conn.close()
 
+
+    def delete_book(self, game_id):
+        query = "DELETE FROM list_of_games WHERE id = %s"
+        try:
+            # connect to the database server
+            db_config = self.read_db_config()
+            conn = MySQLConnection(**db_config)
+            # execute the query
+            cursor = conn.cursor()
+            cursor.execute(query, (game_id,))
+            # accept the change
+            conn.commit()
+        except Error as error:
+            print(error)
+        finally:
+            cursor.close()
+            conn.close()
 
 
 def indb(db):

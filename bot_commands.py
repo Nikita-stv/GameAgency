@@ -95,12 +95,19 @@ def start_handler(message):
 # ------------------------------------------------------------------------------------------------------
 # Формирование новой игры
 
-def setname(message):
+def setdescription(message):
     chat_id = message.chat.id
     text = message.text
     games.append(text)
     sent = bot.send_message(chat_id, "Введите количество уровней:")
     bot.register_next_step_handler(message=sent, callback=get_calendar)
+
+def setname(message):
+    chat_id = message.chat.id
+    text = message.text
+    games.append(text)
+    sent = bot.send_message(chat_id, "Введите описание игры:")
+    bot.register_next_step_handler(message=sent, callback=setdescription)
 
 @bot.message_handler(commands=['new_game'])
 @admin_handler
@@ -180,8 +187,8 @@ def get_day(call):
             itembtnA = types.InlineKeyboardButton("Создать", callback_data="create")
             itembtnB = types.InlineKeyboardButton("Ввести заново", callback_data="anew")
             markup.row(itembtnA, itembtnB)
-            bot.send_message(chat_id, "Название игры: {}\nКоличество уровней: {}\nДата начала игры: {}".format(games[1], games[2], games[3]),
-                             reply_markup=markup)
+            bot.send_message(chat_id, "Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*".format(games[1], games[2], games[3], games[4]),
+                             reply_markup=markup, parse_mode="Markdown")
             bot.answer_callback_query(call.id, text="")
         else:                                       # редактирование даты игры
             update_date(call.message, date)
@@ -194,11 +201,11 @@ def get_day(call):
 # Запись собраной инф. об игре из временного списка в базу
 
 @bot.callback_query_handler(func=lambda call: call.data == 'create')
-def get_day(call):
+def set_game(call):
     db.insert_games(games)
     del games[:]
     chat_id = call.message.chat.id
-    print(call.from_user.id)
+    #print(call.from_user.id)
     list_of_games = db.query_with_fetchall([call.from_user.id])
     my_games(chat_id, list_of_games)
 
@@ -211,7 +218,7 @@ def anew(call):
 
 
 # -----------------------------------------------------------------------------------------------------
-# Вывод списка игр для текущего администратора
+# Вывод списка игр созданных текущим пользователем (администратором)
 
 def my_games(chat_id, list_of_games, send=True, mess=None):
     markup = types.InlineKeyboardMarkup(row_width=3)
@@ -223,8 +230,6 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
     else:
         bot.edit_message_text(chat_id=chat_id, text="Списко игр:", message_id=mess, reply_markup=markup)
 
-# -----------------------------------------------------------------------------------------------------
-# Вывод списка игр созданных текущим пользователем (администратором)
 
 @bot.message_handler(commands=['my_games'])
 @admin_handler
@@ -245,14 +250,26 @@ def properties(call):
     property = db.query_with_fetchall2([call.data[4:]])[0]
     markup = types.InlineKeyboardMarkup(1)
     btn = types.InlineKeyboardButton("✏️", callback_data="edit"+str(property[0]))
-    btn1 = types.InlineKeyboardButton("⬅️", callback_data="back"+str(property[0]))
-    markup.row(btn, btn1)
+    btn1 = types.InlineKeyboardButton("❗️🚮❗️", callback_data="del" + str(property[0]))
+    btn2 = types.InlineKeyboardButton("⬅", callback_data="back"+str(property[0]))
+    markup.row(btn, btn1, btn2)
     bot.edit_message_text(chat_id=chat_id, message_id=mess,
-                     text="Название игры: *{}*,\nКоличество уровней: *{}*,\nДата начала игры: *{}*".format(property[1],
+                     text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*".format(property[1],
                                                                                                       property[2],
-                                                                                                      property[3]),
+                                                                                                      property[3],
+                                                                                                      property[4]),
                      reply_markup=markup, parse_mode="Markdown")
 
+# ------------------------------------------------------------------------------------------------------
+# Если нажато "Del", то удалить выбранную игру
+
+@bot.callback_query_handler(func=lambda call: call.data[0:3] == 'del')
+def del_game(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    db.delete_book(call.data[3:])
+    list_of_games = db.query_with_fetchall([call.from_user.id])
+    my_games(chat_id, list_of_games, send=False, mess=mess)
 
 # ------------------------------------------------------------------------------------------------------
 # Если нажато "Back", то изменить текущее сообщение на предыдущее
@@ -265,7 +282,7 @@ def back_mess(call):
     my_games(chat_id, list_of_games, send=False, mess=mess)
 
 # ------------------------------------------------------------------------------------------------------
-# Вывод модуля редактирования параметров игру (путем изменения InlineKeyboard)
+# Вывод модуля редактирования параметров игры (путем изменения InlineKeyboard)
 
 @bot.callback_query_handler(func=lambda call: call.data[0:5] == 'edit1')
 def edit_mess(call):
@@ -273,7 +290,7 @@ def edit_mess(call):
     mess = call.message.message_id
     inline_mess = call.inline_message_id
     btn = types.InlineKeyboardButton("Редактировать название", callback_data="name" + call.data[4:])
-    btn1 = types.InlineKeyboardButton("Добавить описание к игре", callback_data="description" + call.data[4:])
+    btn1 = types.InlineKeyboardButton("Редактировать описание к игре", callback_data="dscr" + call.data[4:])
     btn2 = types.InlineKeyboardButton("Изменить дату", callback_data="datetime" + call.data[4:])
     btn3 = types.InlineKeyboardButton("Редактировать уровни", callback_data="levels" + call.data[4:])
     btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
@@ -320,7 +337,26 @@ def update_day(call):
     id_game = call.data[8:]
     get_calendar(call.message)
 
+# ------------------------------------------------------------------------------------------------------
+# Изменение описания
 
+def redscr(message):
+    chat_id = message.chat.id
+    db.update_dscr(message.text, id_game)
+    btn = types.InlineKeyboardButton("Далее", callback_data="list" + id_game)
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data[0:4] == 'dscr')
+def update_dscr(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    global id_game
+    id_game = call.data[4:]
+    sent = bot.edit_message_text(text="Введите новое описание игры:", chat_id=chat_id, message_id=mess, reply_markup=None)
+    bot.register_next_step_handler(message=sent, callback=redscr)
 # ------------------------------------------------------------------------------------------------------
 
 
