@@ -136,6 +136,27 @@ class db_handler:
         finally:
             cursor.close()
             conn.close()
+
+    def select_levels(self, args):
+        try:
+            result = []
+            query = "SELECT * FROM levels WHERE game_id=%s"
+            #args =
+            dbconfig = self.read_db_config()
+            conn = MySQLConnection(**dbconfig)
+            cursor = conn.cursor()
+            cursor.execute(query, args)
+            rows = cursor.fetchall()
+            for row in rows:
+                result.append(row)
+            return result
+
+        except Error as e:
+            print(e)
+
+        finally:
+            cursor.close()
+            conn.close()
 #____________________________________________________________________________________________
 # Блок записи в базу
 
@@ -178,14 +199,14 @@ class db_handler:
             conn.close()
 
     def create_levels(self, game_id, lev):
-        query = "INSERT INTO levels(id,game_id) VALUES(%s,%s)"
+        query = "INSERT INTO levels(id,game_id,sn) VALUES(%s,%s,%s)"
         for i in range(lev):
             try:
                 id = str(int(time.time())+i)[3:]
                 db_config = self.read_db_config()
                 conn = MySQLConnection(**db_config)
                 cursor = conn.cursor()
-                cursor.executemany(query, [(id, game_id)])
+                cursor.executemany(query, [(id, game_id, i+1)])
                 conn.commit()
             except Error as e:
                 print('Error:', e)
@@ -210,7 +231,6 @@ class db_handler:
         finally:
             cursor.close()
             conn.close()
-
 
     def update_dscr(self, dscr, id_game):
         query = "UPDATE list_of_games SET description=%s WHERE id=%s"
@@ -262,6 +282,23 @@ class db_handler:
             cursor.close()
             conn.close()
 
+    def delete_all_levels(self, game_id):
+        query = "DELETE FROM levels WHERE game_id = %s"
+        try:
+            # connect to the database server
+            db_config = self.read_db_config()
+            conn = MySQLConnection(**db_config)
+            # execute the query
+            cursor = conn.cursor()
+            cursor.execute(query, (game_id,))
+            # accept the change
+            conn.commit()
+        except Error as error:
+            print(error)
+        finally:
+            cursor.close()
+            conn.close()
+
 
 #def indb(db):
 #    l = []
@@ -273,11 +310,8 @@ class db_handler:
 if __name__ == '__main__':
 
     #print(db_handler().query_with_fetchall([235987482]))
-
     #print(db_handler().query_with_fetchall2([1522305332]))
-
     #db_handler().update_name(name='UPDATE',id_game=1522305332)
-
-    db_handler().create_levels(555, 5)
-
+    #db_handler().create_levels(555, 5)
+    print(db_handler().select_levels([1523345576]))
 
