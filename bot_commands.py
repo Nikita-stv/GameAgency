@@ -371,10 +371,10 @@ def update_dscr(call):
 def edit_levels(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    markup = types.InlineKeyboardMarkup(row_width=3)
+    markup = types.InlineKeyboardMarkup(row_width=5)
     levels = db.select_levels([int(call.data[6:])])
     for i in levels:
-        itembtn = types.InlineKeyboardButton(i[2], callback_data="level" + str(i[0]))
+        itembtn = types.InlineKeyboardButton(i[2], callback_data="elevel" + str(i[0]))
         itembtn1 = types.InlineKeyboardButton(text=str(i[3]), callback_data="ignore")
         markup.row(itembtn, itembtn1)
     btn = types.InlineKeyboardButton("➕", callback_data="add" + call.data[6:])
@@ -383,7 +383,23 @@ def edit_levels(call):
     bot.edit_message_text(text="уровни", chat_id=chat_id, message_id=mess, reply_markup=markup)
 
 
-
+@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'elevel')
+def edit_level(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    markup = types.InlineKeyboardMarkup(row_width=5)
+    level = db.select_level([int(call.data[6:])])
+    print(level)
+    itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="level")
+    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="ignore")
+    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="ignore")
+    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="ignore")
+    itembtn4 = types.InlineKeyboardButton(text="⬅️", callback_data="levels" + str(level[1]))
+    markup.add(itembtn, itembtn1, itembtn2, itembtn3)
+    markup.add(itembtn4)
+    bot.edit_message_text(text="🏷 *Название уровня*\n{}\n\n📕 *Задание*\n{}\n\n🔑 *Ответ*\n{}\n\n💡 *Подсказка*\n{}"
+                          .format(str(level[3]),str(level[4]),str(level[5]),str(level[6])),
+                          chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="markdown")
 # ------------------------------------------------------------------------------------------------------
 
 

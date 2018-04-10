@@ -157,6 +157,27 @@ class db_handler:
         finally:
             cursor.close()
             conn.close()
+
+    def select_level(self, args):
+        try:
+            result = []
+            query = "SELECT * FROM levels WHERE id=%s"
+            #args =
+            dbconfig = self.read_db_config()
+            conn = MySQLConnection(**dbconfig)
+            cursor = conn.cursor()
+            cursor.execute(query, args)
+            rows = cursor.fetchall()
+            for row in rows:
+                result.append(row)
+            return result[0]
+
+        except Error as e:
+            print(e)
+
+        finally:
+            cursor.close()
+            conn.close()
 #____________________________________________________________________________________________
 # Блок записи в базу
 
@@ -313,5 +334,5 @@ if __name__ == '__main__':
     #print(db_handler().query_with_fetchall2([1522305332]))
     #db_handler().update_name(name='UPDATE',id_game=1522305332)
     #db_handler().create_levels(555, 5)
-    print(db_handler().select_levels([1523345576]))
-
+    x = db_handler().select_level([3345586])
+    print(x)
