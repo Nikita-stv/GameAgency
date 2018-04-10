@@ -177,6 +177,22 @@ class db_handler:
             cursor.close()
             conn.close()
 
+    def create_levels(self, game_id, lev):
+        query = "INSERT INTO levels(id,game_id) VALUES(%s,%s)"
+        for i in range(lev):
+            try:
+                id = str(int(time.time())+i)[3:]
+                db_config = self.read_db_config()
+                conn = MySQLConnection(**db_config)
+                cursor = conn.cursor()
+                cursor.executemany(query, [(id, game_id)])
+                conn.commit()
+            except Error as e:
+                print('Error:', e)
+            finally:
+                cursor.close()
+                conn.close()
+
 # ____________________________________________________________________________________________
 # Блок внесения изменений в базу
 
@@ -226,6 +242,8 @@ class db_handler:
             cursor.close()
             conn.close()
 
+# ____________________________________________________________________________________________
+# Удаление строк
 
     def delete_book(self, game_id):
         query = "DELETE FROM list_of_games WHERE id = %s"
@@ -245,11 +263,11 @@ class db_handler:
             conn.close()
 
 
-def indb(db):
-    l = []
-    for i in db:
-        l.append(i[0])
-    return l
+#def indb(db):
+#    l = []
+#    for i in db:
+#        l.append(i[0])
+#    return l
 
 
 if __name__ == '__main__':
@@ -258,6 +276,8 @@ if __name__ == '__main__':
 
     #print(db_handler().query_with_fetchall2([1522305332]))
 
-    db_handler().update_name(name='UPDATE',id_game=1522305332)
+    #db_handler().update_name(name='UPDATE',id_game=1522305332)
+
+    db_handler().create_levels(555, 5)
 
 
