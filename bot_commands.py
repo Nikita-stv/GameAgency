@@ -390,17 +390,47 @@ def edit_level(call):
     markup = types.InlineKeyboardMarkup(row_width=5)
     level = db.select_level([int(call.data[6:])])
     print(level)
-    itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="level")
-    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="ignore")
-    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="ignore")
-    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="ignore")
+    itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="header" + str(level[0]))
+    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="text")
+    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="answer")
+    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="tip")
     itembtn4 = types.InlineKeyboardButton(text="⬅️", callback_data="levels" + str(level[1]))
     markup.add(itembtn, itembtn1, itembtn2, itembtn3)
     markup.add(itembtn4)
     bot.edit_message_text(text="🏷 *Название уровня*\n{}\n\n📕 *Задание*\n{}\n\n🔑 *Ответ*\n{}\n\n💡 *Подсказка*\n{}"
                           .format(str(level[3]),str(level[4]),str(level[5]),str(level[6])),
                           chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="markdown")
+
+
 # ------------------------------------------------------------------------------------------------------
+# Изменение заголовка уровня
+
+def header(message):
+    chat_id = message.chat.id
+    db.update_header(message.text, id_level)
+    btn = types.InlineKeyboardButton("Далее", callback_data="elevel" + id_level)
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
+
+
+@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'header')
+def update_header(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    global id_level
+    id_level = call.data[6:]
+    sent = bot.edit_message_text(text="Введите заголовок уровня", chat_id=chat_id, message_id=mess, reply_markup=None)
+    bot.register_next_step_handler(message=sent, callback=header)
+
+
+# ------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
