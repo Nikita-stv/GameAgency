@@ -123,7 +123,6 @@ def new_handler(message):
 
 current_shown_dates={}
 #@bot.message_handler(commands=['calendar'])
-
 def get_calendar(message):
     games.append(message.text)
     now = datetime.now() #Current date
@@ -309,7 +308,6 @@ def edit_mess(call):
 
 
 def update_game(message, date=None):
-    print(date)
     chat_id = message.chat.id
     btn = types.InlineKeyboardButton("Далее", callback_data="list" + str(id_game))
     markup = types.InlineKeyboardMarkup(1)
@@ -385,11 +383,10 @@ def edit_level(call):
     mess = call.message.message_id
     markup = types.InlineKeyboardMarkup(row_width=5)
     level = db.select_level([int(call.data[6:])])
-    print(level)
     itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="header" + str(level[0]))
-    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="text")
-    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="answer")
-    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="tip")
+    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="task" + str(level[0]))
+    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="answer" + str(level[0]))
+    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="tip" + str(level[0]))
     itembtn4 = types.InlineKeyboardButton(text="⬅️", callback_data="levels" + str(level[1]))
     markup.add(itembtn, itembtn1, itembtn2, itembtn3)
     markup.add(itembtn4)
@@ -421,6 +418,41 @@ def update_header(call):
     sent = bot.edit_message_text(text="Введите заголовок уровня", chat_id=chat_id, message_id=mess, reply_markup=None)
     bot.register_next_step_handler(message=sent, callback=update_level)
 
+
+# Изменение текста уровня
+@bot.callback_query_handler(func=lambda call: call.data[0:4] == 'task')
+def update_task(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    global id_level, param
+    param = call.data[0:4]
+    id_level = call.data[4:]
+    sent = bot.edit_message_text(text="Введите текст задания", chat_id=chat_id, message_id=mess, reply_markup=None)
+    bot.register_next_step_handler(message=sent, callback=update_level)
+
+
+# Изменение ответа
+@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'answer')
+def update_task(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    global id_level, param
+    param = call.data[0:6]
+    id_level = call.data[6:]
+    sent = bot.edit_message_text(text="Введите ответ к заданию", chat_id=chat_id, message_id=mess, reply_markup=None)
+    bot.register_next_step_handler(message=sent, callback=update_level)
+
+
+# Изменение подсказки
+@bot.callback_query_handler(func=lambda call: call.data[0:3] == 'tip')
+def update_task(call):
+    chat_id = call.message.chat.id
+    mess = call.message.message_id
+    global id_level, param
+    param = call.data[0:3]
+    id_level = call.data[3:]
+    sent = bot.edit_message_text(text="Введите текст подсказки", chat_id=chat_id, message_id=mess, reply_markup=None)
+    bot.register_next_step_handler(message=sent, callback=update_level)
 
 # ------------------------------------------------------------------------------------------------------
 

@@ -249,7 +249,7 @@ class db_handler:
         if param == 'header':
             query = "UPDATE levels SET header=%s WHERE id=%s"
         elif param == 'task':
-            query = "UPDATE levels SET text=%s WHERE id=%s"
+            query = "UPDATE levels SET task=%s WHERE id=%s"
         elif param == 'answer':
             query = "UPDATE levels SET answer=%s WHERE id=%s"
         elif param == 'tip':
@@ -268,27 +268,7 @@ class db_handler:
             cursor.close()
             conn.close()
 
-    def update_level(self, param, value, id):
-        if param == 'header':
-            query = "UPDATE levels SET header=%s WHERE id=%s"
-        elif param == 'task':
-            query = "UPDATE levels SET text=%s WHERE id=%s"
-        elif param == 'answer':
-            query = "UPDATE levels SET answer=%s WHERE id=%s"
-        elif param == 'tip':
-            query = "UPDATE levels SET tip=%s WHERE id=%s"
-        arg = (value, id)
-        try:
-            db_config = self.read_db_config()
-            conn = MySQLConnection(**db_config)
-            cursor = conn.cursor()
-            cursor.execute(query, arg)
-            conn.commit()
-        except Error as e:
-            print('Error:', e)
-        finally:
-            cursor.close()
-            conn.close()
+
 # ____________________________________________________________________________________________
 # Удаление строк
 
