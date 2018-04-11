@@ -433,7 +433,7 @@ def update_task(call):
 
 # Изменение ответа
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'answer')
-def update_task(call):
+def update_answer(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     global id_level, param
@@ -445,7 +445,7 @@ def update_task(call):
 
 # Изменение подсказки
 @bot.callback_query_handler(func=lambda call: call.data[0:3] == 'tip')
-def update_task(call):
+def update_tip(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     global id_level, param
