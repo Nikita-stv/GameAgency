@@ -182,17 +182,19 @@ def get_day(call):
             games.append(str(date))                 # записываем дату проведения во временный список
             games.insert(0, int(time.time()))       # формируем id игры
             games.append(call.from_user.id)         # записываем владельца созданной игры
-
             markup = types.InlineKeyboardMarkup(row_width=1)
             itembtnA = types.InlineKeyboardButton("Создать", callback_data="create")
             itembtnB = types.InlineKeyboardButton("Ввести заново", callback_data="anew")
             markup.row(itembtnA, itembtnB)
-            bot.edit_message_text(text="Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*".format(games[1], games[2], games[3], games[4]),
+            bot.edit_message_text(text="Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*"
+                                  .format(games[1], games[2], games[3], games[4]),
                                   chat_id=chat_id, message_id=call.message.message_id,
                                   reply_markup=markup, parse_mode="Markdown")
             bot.answer_callback_query(call.id, text="")
         else:                                       # редактирование даты игры
-            update_date(call.message, date)
+            global param
+            param = 'date'
+            update_game(message=call.message, date=date)
     else:
         #Do something to inform of the error
         pass
@@ -206,9 +208,7 @@ def set_game(call):
     db.insert_games(games)
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    #print(call.from_user.id)
     list_of_games = db.query_with_fetchall([call.from_user.id])
-    #print(games)
     db.create_levels(game_id=int(games[0]), lev=int(games[3]))
     my_games(chat_id, list_of_games, mess=mess, send=False)
     del games[:]
@@ -258,10 +258,8 @@ def properties(call):
     btn2 = types.InlineKeyboardButton("⬅", callback_data="back"+str(property[0]))
     markup.row(btn, btn1, btn2)
     bot.edit_message_text(chat_id=chat_id, message_id=mess,
-                     text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*".format(property[1],
-                                                                                                      property[2],
-                                                                                                      property[3],
-                                                                                                      property[4]),
+                     text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*"
+                     .format(property[1], property[2], property[3], property[4]),
                      reply_markup=markup, parse_mode="Markdown")
 
 # ------------------------------------------------------------------------------------------------------
@@ -301,41 +299,43 @@ def edit_mess(call):
     btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn, btn1, btn2, btn3, btn4)
-    bot.edit_message_reply_markup(chat_id=chat_id, message_id=mess, inline_message_id=inline_mess, reply_markup=markup)
+    property = db.query_with_fetchall2([call.data[4:]])[0]
+
+    bot.edit_message_text(text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*"
+                     .format(property[1], property[2], property[3], property[4]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
+
+# ------------------------------------------------------------------------------------------------------
+# редактирование игр
+
+
+def update_game(message, date=None):
+    print(date)
+    chat_id = message.chat.id
+    btn = types.InlineKeyboardButton("Далее", callback_data="list" + str(id_game))
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    if date == None:
+        db.update_game(param=param, value=message.text, id=id_game)
+        bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
+    else:
+        db.update_game(param=param, value=date, id=id_game)
+        bot.send_message(chat_id=chat_id, text=date, reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
 # Переименование игр
-
-def rename(message):
-    chat_id = message.chat.id
-    mess = message.message_id
-    db.update_name(message.text, id_game)
-    btn = types.InlineKeyboardButton("Далее", callback_data="list" + id_game)
-    markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn)
-    bot.edit_message_text(chat_id=chat_id, text=message.text, message_id=mess, reply_markup=markup)
-
 
 @bot.callback_query_handler(func=lambda call: call.data[0:5] == 'name1')
 def update_name(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    global id_game
+    global id_game, param
+    param = call.data[0:4]
     id_game = call.data[4:]
     sent = bot.edit_message_text(text="Введите новое название игры:", chat_id=chat_id, message_id=mess, reply_markup=None)
-    bot.register_next_step_handler(message=sent, callback=rename)
+    bot.register_next_step_handler(message=sent, callback=update_game)
 
 # ------------------------------------------------------------------------------------------------------
 # Изменение даты игры
-
-def update_date(message, date):
-    chat_id = message.chat.id
-    db.update_date(date, id_game)
-    btn = types.InlineKeyboardButton("Далее", callback_data="list" + id_game)
-    markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn)
-    bot.send_message(chat_id=chat_id, text=date, reply_markup=markup)
-
 
 @bot.callback_query_handler(func=lambda call: call.data[0:8] == 'datetime')
 def update_day(call):
@@ -346,23 +346,15 @@ def update_day(call):
 # ------------------------------------------------------------------------------------------------------
 # Изменение описания
 
-def redscr(message):
-    chat_id = message.chat.id
-    db.update_dscr(message.text, id_game)
-    btn = types.InlineKeyboardButton("Далее", callback_data="list" + id_game)
-    markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn)
-    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
-
-
 @bot.callback_query_handler(func=lambda call: call.data[0:4] == 'dscr')
 def update_dscr(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    global id_game
+    global id_game, param
+    param = call.data[0:4]
     id_game = call.data[4:]
     sent = bot.edit_message_text(text="Введите новое описание игры:", chat_id=chat_id, message_id=mess, reply_markup=None)
-    bot.register_next_step_handler(message=sent, callback=redscr)
+    bot.register_next_step_handler(message=sent, callback=update_game)
 
 # ------------------------------------------------------------------------------------------------------
 # Редактирование уровней !!!
@@ -407,30 +399,30 @@ def edit_level(call):
 
 
 # ------------------------------------------------------------------------------------------------------
-# Изменение заголовка уровня
+# Редактирование параметров уровня
 
-def header(message):
+def update_level(message):
     chat_id = message.chat.id
-    db.update_header(message.text, id_level)
+    db.update_game(param=param, value=message.text, id=id_level)
     btn = types.InlineKeyboardButton("Далее", callback_data="elevel" + id_level)
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn)
     bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
 
 
+# Изменение заголовка уровня
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'header')
 def update_header(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    global id_level
+    global id_level, param
+    param = call.data[0:6]
     id_level = call.data[6:]
     sent = bot.edit_message_text(text="Введите заголовок уровня", chat_id=chat_id, message_id=mess, reply_markup=None)
-    bot.register_next_step_handler(message=sent, callback=header)
+    bot.register_next_step_handler(message=sent, callback=update_level)
 
 
 # ------------------------------------------------------------------------------------------------------
-
-
 
 
 

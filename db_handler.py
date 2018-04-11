@@ -238,9 +238,24 @@ class db_handler:
 # ____________________________________________________________________________________________
 # Блок внесения изменений в базу
 
-    def update_name(self, name, id_game):
-        query = "UPDATE list_of_games SET name=%s WHERE id=%s"
-        arg = (name, id_game)
+    def update_game(self, param, value, id):
+        if param == 'date':
+            query = "UPDATE list_of_games SET date=%s WHERE id=%s"
+        elif param == 'name':
+            query = "UPDATE list_of_games SET name=%s WHERE id=%s"
+        elif param == 'dscr':
+            query = "UPDATE list_of_games SET description=%s WHERE id=%s"
+
+        if param == 'header':
+            query = "UPDATE levels SET header=%s WHERE id=%s"
+        elif param == 'task':
+            query = "UPDATE levels SET text=%s WHERE id=%s"
+        elif param == 'answer':
+            query = "UPDATE levels SET answer=%s WHERE id=%s"
+        elif param == 'tip':
+            query = "UPDATE levels SET tip=%s WHERE id=%s"
+
+        arg = (value, id)
         try:
             db_config = self.read_db_config()
             conn = MySQLConnection(**db_config)
@@ -253,9 +268,16 @@ class db_handler:
             cursor.close()
             conn.close()
 
-    def update_dscr(self, dscr, id_game):
-        query = "UPDATE list_of_games SET description=%s WHERE id=%s"
-        arg = (dscr, id_game)
+    def update_level(self, param, value, id):
+        if param == 'header':
+            query = "UPDATE levels SET header=%s WHERE id=%s"
+        elif param == 'task':
+            query = "UPDATE levels SET text=%s WHERE id=%s"
+        elif param == 'answer':
+            query = "UPDATE levels SET answer=%s WHERE id=%s"
+        elif param == 'tip':
+            query = "UPDATE levels SET tip=%s WHERE id=%s"
+        arg = (value, id)
         try:
             db_config = self.read_db_config()
             conn = MySQLConnection(**db_config)
@@ -267,37 +289,6 @@ class db_handler:
         finally:
             cursor.close()
             conn.close()
-
-    def update_header(self, header, id_level):
-        query = "UPDATE levels SET header=%s WHERE id=%s"
-        arg = (header, id_level)
-        try:
-            db_config = self.read_db_config()
-            conn = MySQLConnection(**db_config)
-            cursor = conn.cursor()
-            cursor.execute(query, arg)
-            conn.commit()
-        except Error as e:
-            print('Error:', e)
-        finally:
-            cursor.close()
-            conn.close()
-
-    def update_date(self, date, id_game):
-        query = "UPDATE list_of_games SET date=%s WHERE id=%s"
-        arg = (date, id_game)
-        try:
-            db_config = self.read_db_config()
-            conn = MySQLConnection(**db_config)
-            cursor = conn.cursor()
-            cursor.execute(query, arg)
-            conn.commit()
-        except Error as e:
-            print('Error:', e)
-        finally:
-            cursor.close()
-            conn.close()
-
 # ____________________________________________________________________________________________
 # Удаление строк
 
@@ -334,13 +325,6 @@ class db_handler:
         finally:
             cursor.close()
             conn.close()
-
-
-#def indb(db):
-#    l = []
-#    for i in db:
-#        l.append(i[0])
-#    return l
 
 
 if __name__ == '__main__':
