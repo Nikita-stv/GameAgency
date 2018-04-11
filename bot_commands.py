@@ -373,14 +373,18 @@ def edit_levels(call):
     mess = call.message.message_id
     markup = types.InlineKeyboardMarkup(row_width=5)
     levels = db.select_levels([int(call.data[6:])])
+    lev = ''
+    btns=[]
     for i in levels:
         itembtn = types.InlineKeyboardButton(i[2], callback_data="elevel" + str(i[0]))
-        itembtn1 = types.InlineKeyboardButton(text=str(i[3]), callback_data="ignore")
-        markup.row(itembtn, itembtn1)
+        btns.append(itembtn)
+        t = '%s. %s\n' %(i[2], i[3])
+        lev+=t
+    markup.add(*btns)
     btn = types.InlineKeyboardButton("➕", callback_data="add" + call.data[6:])
     btn1 = types.InlineKeyboardButton("⬅️", callback_data="edit" + call.data[6:])
     markup.row(btn, btn1)
-    bot.edit_message_text(text="уровни", chat_id=chat_id, message_id=mess, reply_markup=markup)
+    bot.edit_message_text(text=lev, chat_id=chat_id, message_id=mess, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'elevel')
