@@ -241,18 +241,17 @@ class db_handler:
     def update_game(self, param, value, id):
         if param == 'date':
             query = "UPDATE list_of_games SET date=%s WHERE id=%s"
-        elif param == 'name':
+        elif param == 'name*':
             query = "UPDATE list_of_games SET name=%s WHERE id=%s"
-        elif param == 'dscr':
+        elif param == 'dscr*':
             query = "UPDATE list_of_games SET description=%s WHERE id=%s"
-
-        if param == 'header':
+        elif param == '*header':
             query = "UPDATE levels SET header=%s WHERE id=%s"
-        elif param == 'task':
+        elif param == '***task':
             query = "UPDATE levels SET task=%s WHERE id=%s"
-        elif param == 'answer':
+        elif param == '*answer':
             query = "UPDATE levels SET answer=%s WHERE id=%s"
-        elif param == 'tip':
+        elif param == '****tip':
             query = "UPDATE levels SET tip=%s WHERE id=%s"
 
         arg = (value, id)
