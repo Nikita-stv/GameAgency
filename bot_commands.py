@@ -227,7 +227,8 @@ def anew(call):
 def my_games(chat_id, list_of_games, send=True, mess=None):
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in list_of_games:
-        itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="list"+str(i[0]))
+        #itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="list"+str(i[0]))
+        itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="edit" + str(i[0]))
         markup.row(itembtn)
     if send:
         bot.send_message(chat_id, "Список игр 🎲", reply_markup=markup)
@@ -293,16 +294,21 @@ def back_mess(call):
 def edit_mess(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    btn = types.InlineKeyboardButton("Редактировать название 📣", callback_data="egname" + call.data[4:])
-    btn1 = types.InlineKeyboardButton("Редактировать описание к игре 📝", callback_data="egdscr" + call.data[4:])
-    btn2 = types.InlineKeyboardButton("Изменить дату 📅", callback_data="egdate" + call.data[4:])
-    btn3 = types.InlineKeyboardButton("Редактировать уровни", callback_data="levels" + call.data[4:])
-    btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
+    btn = types.InlineKeyboardButton("📣", callback_data="egname" + call.data[4:])
+    btn1 = types.InlineKeyboardButton("📝", callback_data="egdscr" + call.data[4:])
+    btn2 = types.InlineKeyboardButton("📅", callback_data="egdate" + call.data[4:])
+    btn3 = types.InlineKeyboardButton("📚", callback_data="levels" + call.data[4:])
+
+    #btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
+    btn4 = types.InlineKeyboardButton("⬅️", callback_data="back" + call.data[4:])
+    btn5 = types.InlineKeyboardButton("❗🗑❗️", callback_data="del" + call.data[4:])
+
     markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn, btn1, btn2, btn3, btn4)
+    markup.row(btn, btn1, btn2, btn3)
+    markup.row(btn4, btn5)
     property = db.sample('games', call.data[4:])[0]
-    bot.edit_message_text(text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*"
-                     .format(property[1], property[2], property[3], property[4]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
+    bot.edit_message_text(text="📣 *Название игры*\n{}\n\n📝 *Описание*\n{}\n\n📅 *Дата начала игры*\n{}\n\n📚 *Количество уровней*\n{}\n--------------------------------------------------\n⬇️*Нажми, чтобы изменить*⬇️"
+                     .format(property[1], property[2], property[4], property[3]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
 
 # ------------------------------------------------------------------------------------------------------
 # Редактирование игр
@@ -310,7 +316,7 @@ def edit_mess(call):
 
 def update_game(message, date=None):
     chat_id = message.chat.id
-    btn = types.InlineKeyboardButton("Далее", callback_data="list" + str(id_game))
+    btn = types.InlineKeyboardButton("Далее", callback_data="back" + str(id_game))
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn)
     if date == None:
@@ -358,10 +364,10 @@ def edit_levels(call):
         t = '%s. %s\n' %(i[2], i[3])
         lev+=t
     markup.add(*btns)
-    btn = types.InlineKeyboardButton("➕", callback_data="addlev" + call.data[6:16])
+    btn = types.InlineKeyboardButton("🇨🇭", callback_data="addlev" + call.data[6:16])
     btn1 = types.InlineKeyboardButton("⬅️", callback_data="edit" + call.data[6:16])
     markup.row(btn, btn1)
-    bot.edit_message_text(text=lev, chat_id=chat_id, message_id=mess, reply_markup=markup)
+    bot.edit_message_text(text="📚*Уровни*📚\n\n" + lev, chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
 
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'elevel')
@@ -378,7 +384,7 @@ def edit_level(call):
     itembtn5 = types.InlineKeyboardButton(text="❗🗑❗", callback_data="le_del" + str(level[1]) + str(level[0]))
     markup.add(itembtn, itembtn1, itembtn2, itembtn3)
     markup.add(itembtn4, itembtn5)
-    bot.edit_message_text(text="🏷 *Название уровня*\n{}\n\n📕 *Задание*\n{}\n\n🔑 *Ответ*\n{}\n\n💡 *Подсказка*\n{}"
+    bot.edit_message_text(text="🏷 *Название уровня*\n{}\n\n📕 *Задание*\n{}\n\n🔑 *Ответ*\n{}\n\n💡 *Подсказка*\n{}\n--------------------------------------------------\n⬇️*Нажми, чтобы изменить*⬇️"
                           .format(str(level[3]),str(level[4]),str(level[5]),str(level[6])),
                           chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="markdown")
 
