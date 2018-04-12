@@ -192,8 +192,9 @@ def get_day(call):
             bot.answer_callback_query(call.id, text="")
         else:                                       # редактирование даты игры
             global param
-            param = 'date'
+            param = 'egdate'
             update_game(message=call.message, date=date)
+            del games[:]
     else:
         #Do something to inform of the error
         pass
@@ -229,9 +230,9 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
         itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="list"+str(i[0]))
         markup.row(itembtn)
     if send:
-        bot.send_message(chat_id, "Список игр:", reply_markup=markup)
+        bot.send_message(chat_id, "Список игр 🎲", reply_markup=markup)
     else:
-        bot.edit_message_text(chat_id=chat_id, text="Список игр:", message_id=mess, reply_markup=markup)
+        bot.edit_message_text(chat_id=chat_id, text="Список игр 🎲", message_id=mess, reply_markup=markup)
 
 
 @bot.message_handler(commands=['my_games'])
@@ -290,16 +291,14 @@ def back_mess(call):
 def edit_mess(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    inline_mess = call.inline_message_id
-    btn = types.InlineKeyboardButton("Редактировать название 📣", callback_data="name*" + call.data[4:])
-    btn1 = types.InlineKeyboardButton("Редактировать описание к игре 📝", callback_data="dscr*" + call.data[4:])
-    btn2 = types.InlineKeyboardButton("Изменить дату 📅", callback_data="datetime" + call.data[4:])
+    btn = types.InlineKeyboardButton("Редактировать название 📣", callback_data="egname" + call.data[4:])
+    btn1 = types.InlineKeyboardButton("Редактировать описание к игре 📝", callback_data="egdscr" + call.data[4:])
+    btn2 = types.InlineKeyboardButton("Изменить дату 📅", callback_data="egdate" + call.data[4:])
     btn3 = types.InlineKeyboardButton("Редактировать уровни", callback_data="levels" + call.data[4:])
     btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn, btn1, btn2, btn3, btn4)
     property = db.query_with_fetchall2([call.data[4:]])[0]
-
     bot.edit_message_text(text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*"
                      .format(property[1], property[2], property[3], property[4]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
 
@@ -321,22 +320,22 @@ def update_game(message, date=None):
 
 
 # Редактирование имени и описания игры игр
-@bot.callback_query_handler(func=lambda call: call.data[0:5] == 'name*' or 'dscr*')
+@bot.callback_query_handler(func=lambda call: call.data[0:6] in ['egname', 'egdscr'])
 def update_name(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     global id_game, param
-    param = call.data[0:5]
-    id_game = call.data[5:]
-    sent = bot.edit_message_text(text="Введите новое значение", chat_id=chat_id, message_id=mess, reply_markup=None)
+    param = call.data[0:6]
+    id_game = call.data[6:]
+    sent = bot.edit_message_text(text="Введите новое значение*", chat_id=chat_id, message_id=mess, reply_markup=None)
     bot.register_next_step_handler(message=sent, callback=update_game)
 
 
 # Изменение даты игры
-@bot.callback_query_handler(func=lambda call: call.data[0:8] == 'datetime')
+@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'egdate')
 def update_day(call):
     global id_game
-    id_game = call.data[8:]
+    id_game = int(call.data[6:])
     get_calendar(call.message)
 
 
@@ -369,10 +368,10 @@ def edit_level(call):
     mess = call.message.message_id
     markup = types.InlineKeyboardMarkup(row_width=5)
     level = db.select_level([int(call.data[6:])])
-    itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="*header" + str(level[0]))
-    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="***task" + str(level[0]))
-    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="*answer" + str(level[0]))
-    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="****tip" + str(level[0]))
+    itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="elhead" + str(level[0]))
+    itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="eltask" + str(level[0]))
+    itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="elansw" + str(level[0]))
+    itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="eletip" + str(level[0]))
     itembtn4 = types.InlineKeyboardButton(text="⬅️", callback_data="levels" + str(level[1]))
     markup.add(itembtn, itembtn1, itembtn2, itembtn3)
     markup.add(itembtn4)
@@ -394,13 +393,14 @@ def update_level(message):
 
 
 # Изменение параметров уровня
-@bot.callback_query_handler(func=lambda call: call.data[0:7] == '*header' or '***task' or '*answer' or '****tip')
+#@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'elhead' or call.data[0:6] == 'eltask' or call.data[0:6] == 'elansw' or call.data[0:6] == 'eletip')
+@bot.callback_query_handler(func=lambda call: call.data[0:6] in ['elhead', 'eltask', 'elansw', 'eletip'])
 def update_header(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     global id_level, param
-    param = call.data[0:7]
-    id_level = call.data[7:]
+    param = call.data[0:6]
+    id_level = call.data[6:]
     sent = bot.edit_message_text(text="Введите новое значение", chat_id=chat_id, message_id=mess, reply_markup=None)
     bot.register_next_step_handler(message=sent, callback=update_level)
 

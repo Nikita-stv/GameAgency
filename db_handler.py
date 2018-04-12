@@ -239,19 +239,19 @@ class db_handler:
 # Блок внесения изменений в базу
 
     def update_game(self, param, value, id):
-        if param == 'date':
+        if param == 'egdate':
             query = "UPDATE list_of_games SET date=%s WHERE id=%s"
-        elif param == 'name*':
+        elif param == 'egname':
             query = "UPDATE list_of_games SET name=%s WHERE id=%s"
-        elif param == 'dscr*':
+        elif param == 'egdscr':
             query = "UPDATE list_of_games SET description=%s WHERE id=%s"
-        elif param == '*header':
+        elif param == 'elhead':
             query = "UPDATE levels SET header=%s WHERE id=%s"
-        elif param == '***task':
+        elif param == 'eltask':
             query = "UPDATE levels SET task=%s WHERE id=%s"
-        elif param == '*answer':
+        elif param == 'elansw':
             query = "UPDATE levels SET answer=%s WHERE id=%s"
-        elif param == '****tip':
+        elif param == 'eletip':
             query = "UPDATE levels SET tip=%s WHERE id=%s"
 
         arg = (value, id)
