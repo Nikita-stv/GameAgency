@@ -227,7 +227,6 @@ def anew(call):
 def my_games(chat_id, list_of_games, send=True, mess=None):
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in list_of_games:
-        #itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="list"+str(i[0]))
         itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="edit" + str(i[0]))
         markup.row(itembtn)
     if send:
@@ -246,32 +245,12 @@ def mygame_handler(message):
 
 
 # ------------------------------------------------------------------------------------------------------
-# Блок вывода информации о выбранной игре
-
-@bot.callback_query_handler(func=lambda call: call.data[0:4] == 'list')
-def properties(call):
-    chat_id = call.message.chat.id
-    mess = call.message.message_id
-    property = db.sample('games', call.data[4:])[0]
-    markup = types.InlineKeyboardMarkup(1)
-    btn = types.InlineKeyboardButton("✏️", callback_data="edit"+str(property[0]))
-    btn1 = types.InlineKeyboardButton("❗🗑❗️", callback_data="del" + str(property[0]))
-    btn2 = types.InlineKeyboardButton("⬅", callback_data="back"+str(property[0]))
-    markup.row(btn, btn1, btn2)
-    bot.edit_message_text(chat_id=chat_id, message_id=mess,
-                     text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*"
-                     .format(property[1], property[2], property[3], property[4]),
-                     reply_markup=markup, parse_mode="Markdown")
-
-# ------------------------------------------------------------------------------------------------------
 # Если нажато "Del", то удалить выбранную игру
 
 @bot.callback_query_handler(func=lambda call: call.data[0:3] == 'del')
 def del_game(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    #db.delete_book(call.data[3:])
-    #db.delete_all_levels(call.data[3:])
     db.delete('del_game', call.data[3:])
     db.delete('del_all_lev', call.data[3:])
     list_of_games = db.sample('owner', call.from_user.id)
@@ -298,11 +277,8 @@ def edit_mess(call):
     btn1 = types.InlineKeyboardButton("📝", callback_data="egdscr" + call.data[4:])
     btn2 = types.InlineKeyboardButton("📅", callback_data="egdate" + call.data[4:])
     btn3 = types.InlineKeyboardButton("📚", callback_data="levels" + call.data[4:])
-
-    #btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
     btn4 = types.InlineKeyboardButton("⬅️", callback_data="back" + call.data[4:])
     btn5 = types.InlineKeyboardButton("❗🗑❗️", callback_data="del" + call.data[4:])
-
     markup = types.InlineKeyboardMarkup(1)
     markup.row(btn, btn1, btn2, btn3)
     markup.row(btn4, btn5)
@@ -316,7 +292,7 @@ def edit_mess(call):
 
 def update_game(message, date=None):
     chat_id = message.chat.id
-    btn = types.InlineKeyboardButton("Далее", callback_data="back" + str(id_game))
+    btn = types.InlineKeyboardButton("Далее", callback_data="edit" + str(id_game))
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn)
     if date == None:
