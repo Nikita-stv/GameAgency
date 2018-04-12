@@ -208,7 +208,7 @@ def set_game(call):
     db.insert_games(games)
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    list_of_games = db.query_with_fetchall([call.from_user.id])
+    list_of_games = db.sample('owner', call.from_user.id)
     db.create_levels(game_id=int(games[0]), lev=int(games[3]))
     my_games(chat_id, list_of_games, mess=mess, send=False)
     del games[:]
@@ -240,7 +240,7 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
 def mygame_handler(message):
     del games[:]
     chat_id = message.chat.id
-    list_of_games = db.query_with_fetchall([message.from_user.id])
+    list_of_games = db.sample('owner', message.from_user.id)
     my_games(chat_id, list_of_games)
 
 
@@ -251,7 +251,7 @@ def mygame_handler(message):
 def properties(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    property = db.query_with_fetchall2([call.data[4:]])[0]
+    property = db.sample('games', call.data[4:])[0]
     markup = types.InlineKeyboardMarkup(1)
     btn = types.InlineKeyboardButton("✏️", callback_data="edit"+str(property[0]))
     btn1 = types.InlineKeyboardButton("❗🗑❗️", callback_data="del" + str(property[0]))
@@ -269,9 +269,11 @@ def properties(call):
 def del_game(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    db.delete_book(call.data[3:])
-    db.delete_all_levels(call.data[3:])
-    list_of_games = db.query_with_fetchall([call.from_user.id])
+    #db.delete_book(call.data[3:])
+    #db.delete_all_levels(call.data[3:])
+    db.delete('del_game', call.data[3:])
+    db.delete('del_all_lev', call.data[3:])
+    list_of_games = db.sample('owner', call.from_user.id)
     my_games(chat_id, list_of_games, send=False, mess=mess)
 
 # ------------------------------------------------------------------------------------------------------
@@ -281,7 +283,7 @@ def del_game(call):
 def back_mess(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
-    list_of_games = db.query_with_fetchall([call.from_user.id])
+    list_of_games = db.sample('owner', call.from_user.id)
     my_games(chat_id, list_of_games, send=False, mess=mess)
 
 # ------------------------------------------------------------------------------------------------------
@@ -298,7 +300,7 @@ def edit_mess(call):
     btn4 = types.InlineKeyboardButton("⬅️", callback_data="list" + call.data[4:])
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn, btn1, btn2, btn3, btn4)
-    property = db.query_with_fetchall2([call.data[4:]])[0]
+    property = db.sample('games', call.data[4:])[0]
     bot.edit_message_text(text="Название игры: *{}*,\nОписание: *{}*\nКоличество уровней: *{}*,\nДата начала игры: *{}*"
                      .format(property[1], property[2], property[3], property[4]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
 
@@ -340,14 +342,14 @@ def update_day(call):
 
 
 # ------------------------------------------------------------------------------------------------------
-# Интерфейс уровней !!!
+# Список уровней !!!
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'levels')
 def edit_levels(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     markup = types.InlineKeyboardMarkup(row_width=5)
-    levels = db.select_levels([int(call.data[6:])])
+    levels = db.select_levels([int(call.data[6:16])])
     lev = ''
     btns=[]
     for i in levels:
@@ -356,8 +358,8 @@ def edit_levels(call):
         t = '%s. %s\n' %(i[2], i[3])
         lev+=t
     markup.add(*btns)
-    btn = types.InlineKeyboardButton("➕", callback_data="add" + call.data[6:])
-    btn1 = types.InlineKeyboardButton("⬅️", callback_data="edit" + call.data[6:])
+    btn = types.InlineKeyboardButton("➕", callback_data="add" + call.data[6:16])
+    btn1 = types.InlineKeyboardButton("⬅️", callback_data="edit" + call.data[6:16])
     markup.row(btn, btn1)
     bot.edit_message_text(text=lev, chat_id=chat_id, message_id=mess, reply_markup=markup)
 
@@ -373,8 +375,9 @@ def edit_level(call):
     itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="elansw" + str(level[0]))
     itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="eletip" + str(level[0]))
     itembtn4 = types.InlineKeyboardButton(text="⬅️", callback_data="levels" + str(level[1]))
+    itembtn5 = types.InlineKeyboardButton(text="❗🗑❗", callback_data="le_del" + str(level[1]) + str(level[0]))
     markup.add(itembtn, itembtn1, itembtn2, itembtn3)
-    markup.add(itembtn4)
+    markup.add(itembtn4, itembtn5)
     bot.edit_message_text(text="🏷 *Название уровня*\n{}\n\n📕 *Задание*\n{}\n\n🔑 *Ответ*\n{}\n\n💡 *Подсказка*\n{}"
                           .format(str(level[3]),str(level[4]),str(level[5]),str(level[6])),
                           chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="markdown")
@@ -404,7 +407,17 @@ def update_header(call):
     sent = bot.edit_message_text(text="Введите новое значение", chat_id=chat_id, message_id=mess, reply_markup=None)
     bot.register_next_step_handler(message=sent, callback=update_level)
 
+# ------------------------------------------------------------------------------------------------------
+# удаление уровня
 
+@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'le_del')
+def del_game(call):
+    db.delete('del_level', call.data[16:])
+    num = db.sample('sn', call.data[6:16])
+    for i in range(len(num)):
+        db.update_game('sn', i+1, num[i][0])
+    db.update_game('nol', len(num), call.data[6:16])
+    edit_levels(call)
 
 
 # ------------------------------------------------------------------------------------------------------
