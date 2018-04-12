@@ -220,6 +220,20 @@ class db_handler:
                 cursor.close()
                 conn.close()
 
+    def add_level(self, game_id, sn):
+        query = "INSERT INTO levels(id,game_id,sn) VALUES(%s,%s,%s)"
+        try:
+            id = str(int(time.time()))[3:]
+            db_config = self.read_db_config()
+            conn = MySQLConnection(**db_config)
+            cursor = conn.cursor()
+            cursor.executemany(query, [(id, game_id, sn)])
+            conn.commit()
+        except Error as e:
+            print('Error:', e)
+        finally:
+            cursor.close()
+            conn.close()
 # ____________________________________________________________________________________________
 # Блок внесения изменений в базу
 

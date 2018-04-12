@@ -358,7 +358,7 @@ def edit_levels(call):
         t = '%s. %s\n' %(i[2], i[3])
         lev+=t
     markup.add(*btns)
-    btn = types.InlineKeyboardButton("➕", callback_data="add" + call.data[6:16])
+    btn = types.InlineKeyboardButton("➕", callback_data="addlev" + call.data[6:16])
     btn1 = types.InlineKeyboardButton("⬅️", callback_data="edit" + call.data[6:16])
     markup.row(btn, btn1)
     bot.edit_message_text(text=lev, chat_id=chat_id, message_id=mess, reply_markup=markup)
@@ -396,7 +396,6 @@ def update_level(message):
 
 
 # Изменение параметров уровня
-#@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'elhead' or call.data[0:6] == 'eltask' or call.data[0:6] == 'elansw' or call.data[0:6] == 'eletip')
 @bot.callback_query_handler(func=lambda call: call.data[0:6] in ['elhead', 'eltask', 'elansw', 'eletip'])
 def update_header(call):
     chat_id = call.message.chat.id
@@ -411,12 +410,21 @@ def update_header(call):
 # удаление уровня
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'le_del')
-def del_game(call):
+def del_level(call):
     db.delete('del_level', call.data[16:])
     num = db.sample('sn', call.data[6:16])
     for i in range(len(num)):
         db.update_game('sn', i+1, num[i][0])
     db.update_game('nol', len(num), call.data[6:16])
+    edit_levels(call)
+
+# добавление уровня
+
+@bot.callback_query_handler(func=lambda call: call.data[0:6] == 'addlev')
+def add_level(call):
+    num = db.sample('sn', call.data[6:])
+    db.add_level(call.data[6:], len(num) + 1)
+    db.update_game('nol', len(num)+1, call.data[6:])
     edit_levels(call)
 
 
