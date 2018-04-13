@@ -1,13 +1,13 @@
 from telebot import types
 import calendar
+from datetime import datetime
 
 def create_calendar(year,month):
+    today = str(datetime.now())
     markup = types.InlineKeyboardMarkup()
-    #First row - Month and Year
     row=[]
     row.append(types.InlineKeyboardButton(calendar.month_name[month]+" "+str(year),callback_data="ignore"))
     markup.row(*row)
-    #Second row - Week Days
     week_days=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"]
     row=[]
     for day in week_days:
@@ -18,12 +18,20 @@ def create_calendar(year,month):
     for week in my_calendar:
         row=[]
         for day in week:
-            if(day==0):
-                row.append(types.InlineKeyboardButton(" ",callback_data="ignore"))
+            if month > int(today[5:7]):
+                if (day == 0):
+                    row.append(types.InlineKeyboardButton(" ", callback_data="ignore"))
+                else:
+                    row.append(types.InlineKeyboardButton(str(day), callback_data="calendar-day-" + str(day)))
             else:
-                row.append(types.InlineKeyboardButton(str(day),callback_data="calendar-day-"+str(day)))
+                if month == int(today[5:7]):
+                    if day < int(today[8:10]):
+                        row.append(types.InlineKeyboardButton(" ", callback_data="ignore"))
+                    else:
+                        row.append(types.InlineKeyboardButton(str(day), callback_data="calendar-day-" + str(day)))
+                else:
+                    row.append(types.InlineKeyboardButton(" ", callback_data="ignore"))
         markup.row(*row)
-    #Last row - Buttons
     row=[]
     row.append(types.InlineKeyboardButton("<",callback_data="previous-month"))
     row.append(types.InlineKeyboardButton(" ",callback_data="ignore"))

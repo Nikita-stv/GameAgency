@@ -135,6 +135,7 @@ def get_calendar(message):
 @bot.callback_query_handler(func=lambda call: call.data == 'next-month')
 def next_month(call):
     chat_id = call.message.chat.id
+    mess = call.message.message_id
     saved_date = current_shown_dates.get(chat_id)
     if(saved_date is not None):
         year,month = saved_date
@@ -145,7 +146,7 @@ def next_month(call):
         date = (year,month)
         current_shown_dates[chat_id] = date
         markup= create_calendar(year,month)
-        bot.send_message("Укажите дату начала игры:", chat_id, reply_markup=markup)
+        bot.edit_message_text(text="Укажите дату начала игры:", chat_id=chat_id, message_id=mess, reply_markup=markup)
         bot.answer_callback_query(call.id, text="")
     else:
         #Do something to inform of the error
@@ -154,6 +155,7 @@ def next_month(call):
 @bot.callback_query_handler(func=lambda call: call.data == 'previous-month')
 def previous_month(call):
     chat_id = call.message.chat.id
+    mess = call.message.message_id
     saved_date = current_shown_dates.get(chat_id)
     if(saved_date is not None):
         year,month = saved_date
@@ -164,7 +166,7 @@ def previous_month(call):
         date = (year,month)
         current_shown_dates[chat_id] = date
         markup= create_calendar(year,month)
-        bot.edit_message_text("Укажите дату начала игры:", call.from_user.id, call.message.message_id, reply_markup=markup)
+        bot.edit_message_text(text="Укажите дату начала игры:", chat_id=chat_id, message_id=mess, reply_markup=markup)
         bot.answer_callback_query(call.id, text="")
     else:
         #Do something to inform of the error
@@ -176,7 +178,9 @@ def get_day(call):
     saved_date = current_shown_dates.get(chat_id)
     if(saved_date is not None):
         day = call.data[13:]
+        print(saved_date)
         date = datetime(int(saved_date[0]),int(saved_date[1]),int(day),0,0,0)
+        print(date)
         if len(games) > 1:                          # формирование даты для новой игры
             games.append(str(date))                 # записываем дату проведения во временный список
             games.insert(0, int(time.time()))       # формируем id игры
@@ -271,6 +275,7 @@ def back_mess(call):
 
 @bot.callback_query_handler(func=lambda call: call.data[0:5] == 'edit1')
 def edit_mess(call):
+    bot.answer_callback_query(callback_query_id=call.id, text="Готово!")
     chat_id = call.message.chat.id
     mess = call.message.message_id
     btn = types.InlineKeyboardButton("📣", callback_data="egname" + call.data[4:])
@@ -284,7 +289,7 @@ def edit_mess(call):
     markup.row(btn4, btn5)
     property = db.sample('games', call.data[4:])[0]
     bot.edit_message_text(text="📣 *Название игры*\n{}\n\n📝 *Описание*\n{}\n\n📅 *Дата начала игры*\n{}\n\n📚 *Количество уровней*\n{}\n--------------------------------------------------\n⬇️*Нажми, чтобы изменить*⬇️"
-                     .format(property[1], property[2], property[4], property[3]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown")
+                     .format(property[1], property[2], property[4], property[3]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown", disable_web_page_preview=True)
 
 # ------------------------------------------------------------------------------------------------------
 # Редактирование игр
@@ -301,6 +306,7 @@ def update_game(message, date=None):
     else:
         db.update_game(param=param, value=date, id=id_game)
         bot.send_message(chat_id=chat_id, text=date, reply_markup=markup)
+
 
 
 # Редактирование имени и описания игры игр
