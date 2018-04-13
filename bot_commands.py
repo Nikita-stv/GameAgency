@@ -4,7 +4,7 @@ import telebot
 from telebot import types
 import time
 from db_handler import db_handler
-from telegramcalendar import create_calendar
+from tcalendar import create_calendar
 from configparser import ConfigParser
 
 

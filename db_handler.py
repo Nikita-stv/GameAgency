@@ -235,7 +235,7 @@ class db_handler:
             cursor.close()
             conn.close()
 # ____________________________________________________________________________________________
-# Блок внесения изменений в базу
+# Обновления базы
 
     def update_game(self, param, value, id):
         if param == 'egdate':
