@@ -42,16 +42,22 @@ def create_calendar(year,month):
 
 
 def create_clock(H=0, M=0):
+    H = str(H)
+    M = str(M)
+    if len(H) == 1:
+        H = '0'+H
+    if len(M) == 1:
+        M = '0'+M
     markup = types.InlineKeyboardMarkup(row_width=1)
     btnH = types.InlineKeyboardButton(text=H, callback_data="ignore")
     btnM = types.InlineKeyboardButton(text=M, callback_data="ignore")
     markup.row(btnH, btnM)
-    btnHUp = types.InlineKeyboardButton("🔼", callback_data="btnHUp"+str(H))
-    btnHDown = types.InlineKeyboardButton("🔽", callback_data="btnHDown"+str(H))
-    markup.row(btnHUp, btnHDown)
-    btnMUp = types.InlineKeyboardButton("🔼", callback_data="btnMUp"+str(M))
-    btnMDown = types.InlineKeyboardButton("🔽", callback_data="btnMDown"+str(M))
-    markup.row(btnMUp, btnMDown)
-    markup.add(types.InlineKeyboardButton("Далее", callback_data="datetime"+str(H)+str(M)))
-    #bot.edit_message_text(text="🕒 *00* : *00* 🕒", chat_id=chat_id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+    btnHUp = types.InlineKeyboardButton("🔼", callback_data="btnHUp"+H)
+    btnMUp = types.InlineKeyboardButton("🔼", callback_data="btnMUp"+M)
+    markup.row(btnHUp, btnMUp)
+    btnHDown = types.InlineKeyboardButton("🔽", callback_data="btnHDown"+H)
+    btnMDown = types.InlineKeyboardButton("🔽", callback_data="btnMDown"+M)
+    markup.row(btnHDown, btnMDown)
+    markup.add(types.InlineKeyboardButton("Далее", callback_data="datetime"+H+M))
+
     return markup

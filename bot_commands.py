@@ -7,6 +7,9 @@ from db_handler import db_handler
 from tcalendar import create_calendar, create_clock
 from configparser import ConfigParser
 
+from telebot import apihelper
+
+apihelper.proxy = {'https':'http://127.0.0.1:999'}
 
 #--------------------------------------------------------------------------------------------------
 
@@ -120,12 +123,13 @@ def new_handler(message):
 
 # -----------------------------------------------------------------------------------------------------
 # Блок для вывода интерактивного календаря для выбора даты игры и обработки ответа пользователя, время начала игры 00:00
+now = datetime.now()
 
 current_shown_dates={}
 #@bot.message_handler(commands=['calendar'])
 def get_calendar(message, edit=False):
     games.append(message.text)
-    now = datetime.now() #Current date
+    #now = datetime.now()
     chat_id = message.chat.id
     mess = message.message_id
     date = (now.year,now.month)
@@ -187,7 +191,7 @@ def get_day(call):
 
 
 
-@bot.callback_query_handler(func=lambda call: call.data == 'datetime')
+@bot.callback_query_handler(func=lambda call: call.data[0:8] == 'datetime')
 def datetime(call):
     chat_id = call.message.chat.id
     saved_date = current_shown_dates.get(chat_id)
@@ -199,7 +203,7 @@ def datetime(call):
         #                      message_id=call.message.message_id, reply_markup=create_clock(), parse_mode="Markdown")
         # print(dir(call.message))
 
-        date = datetime(int(saved_date[0]), int(saved_date[1]), int(day), call.data[8:9], call.data[9:10], 0)
+        date = datetime(int(saved_date[0]), int(saved_date[1]), int(day), call.data[8:10], call.data[10:12], 0)
         print(date)
         if len(games) > 1:  # формирование даты для новой игры
             games.append(str(date))  # записываем дату проведения во временный список
@@ -245,7 +249,7 @@ def hour_down(call):
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'btnMUp')
 def minute_up(call):
     chat_id = call.message.chat.id
-    minute = int(call.data[6:]) + 1
+    minute = int(call.data[6:])+1
     bot.edit_message_text(text="🕒 *Укажите время начала игры* 🕒", chat_id=chat_id, message_id=call.message.message_id,
                           reply_markup=create_clock(M=minute), parse_mode="Markdown")
 
@@ -356,8 +360,8 @@ def update_game(message, date=None):
     markup.add(btn)
     if date == None:
         db.update_game(param=param, value=message.text, id=id_game)
-        #bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
-        bot.edit_message_text(chat_id=chat_id, message_id=mess, text=message.text, reply_markup=markup)
+        bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
+        #bot.edit_message_text(chat_id=chat_id, message_id=mess, text=message.text, reply_markup=markup)
     else:
         db.update_game(param=param, value=date, id=id_game)
         #bot.send_message(chat_id=chat_id, text=date, reply_markup=markup)
