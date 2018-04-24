@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date, time as dtime
 from flask import Flask, request
 import telebot
 from telebot import types
@@ -123,13 +123,11 @@ def new_handler(message):
 
 # -----------------------------------------------------------------------------------------------------
 # Блок для вывода интерактивного календаря для выбора даты игры и обработки ответа пользователя, время начала игры 00:00
-now = datetime.now()
 
 current_shown_dates={}
-#@bot.message_handler(commands=['calendar'])
 def get_calendar(message, edit=False):
     games.append(message.text)
-    #now = datetime.now()
+    now = datetime.now()
     chat_id = message.chat.id
     mess = message.message_id
     date = (now.year,now.month)
@@ -140,6 +138,7 @@ def get_calendar(message, edit=False):
         bot.send_message(text="Укажите дату начала игры:", chat_id=message.chat.id, reply_markup=markup)
     else:
         bot.edit_message_text(text="Укажите дату начала игры:", chat_id=message.chat.id, message_id=mess, reply_markup=markup)
+
 
 @bot.callback_query_handler(func=lambda call: call.data == 'next-month')
 def next_month(call):
@@ -161,6 +160,7 @@ def next_month(call):
         #Do something to inform of the error
         pass
 
+
 @bot.callback_query_handler(func=lambda call: call.data == 'previous-month')
 def previous_month(call):
     chat_id = call.message.chat.id
@@ -181,6 +181,7 @@ def previous_month(call):
         #Do something to inform of the error
         pass
 
+
 @bot.callback_query_handler(func=lambda call: call.data[0:13] == 'calendar-day-')
 def get_day(call):
     chat_id = call.message.chat.id
@@ -190,23 +191,16 @@ def get_day(call):
                               reply_markup=create_clock(), parse_mode="Markdown")
 
 
-
 @bot.callback_query_handler(func=lambda call: call.data[0:8] == 'datetime')
-def datetime(call):
+def datetimes(call):
     chat_id = call.message.chat.id
     saved_date = current_shown_dates.get(chat_id)
     if (saved_date is not None):
-        #day = call.data[13:]
-        print(saved_date)
-
-        #bot.edit_message_text(text="🕒 *Укажите время начала игры* 🕒", chat_id=chat_id,
-        #                      message_id=call.message.message_id, reply_markup=create_clock(), parse_mode="Markdown")
-        # print(dir(call.message))
-
-        date = datetime(int(saved_date[0]), int(saved_date[1]), int(day), call.data[8:10], call.data[10:12], 0)
-        print(date)
+        d = date(int(saved_date[0]), int(saved_date[1]), int(day))
+        t = dtime(int(call.data[8:10]), int(call.data[10:]))
+        dt = datetime.combine(d, t)
         if len(games) > 1:  # формирование даты для новой игры
-            games.append(str(date))  # записываем дату проведения во временный список
+            games.append(str(dt))  # записываем дату проведения во временный список
             games.insert(0, int(time.time()))  # формируем id игры
             games.append(call.from_user.id)  # записываем владельца созданной игры
             markup = types.InlineKeyboardMarkup(row_width=1)
@@ -221,10 +215,8 @@ def datetime(call):
         else:  # редактирование даты игры
             global param
             param = 'egdate'
-            update_game(message=call.message, date=date)
+            update_game(message=call.message, date=dt)
             del games[:]
-
-
     else:
         # Do something to inform of the error
         pass
@@ -234,32 +226,36 @@ def datetime(call):
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'btnHUp')
 def hour_up(call):
     chat_id = call.message.chat.id
-    hour = int(call.data[6:])+1
+    hour = int(call.data[6:8])+1
+    minute = int(call.data[8:])
     bot.edit_message_text(text="🕒 *Укажите время начала игры* 🕒", chat_id=chat_id, message_id=call.message.message_id,
-                          reply_markup=create_clock(H=hour), parse_mode="Markdown")
+                          reply_markup=create_clock(H=hour, M=minute), parse_mode="Markdown")
 
-@bot.callback_query_handler(func=lambda call: call.data[0:7] == 'btnHDown')
+@bot.callback_query_handler(func=lambda call: call.data[0:8] == 'btnHDown')
 def hour_down(call):
     chat_id = call.message.chat.id
-    hour = int(call.data[7:])-1
+    hour = int(call.data[8:10])-1
+    minute = int(call.data[10:])
     bot.edit_message_text(text="🕒 *Укажите время начала игры* 🕒", chat_id=chat_id, message_id=call.message.message_id,
-                          reply_markup=create_clock(H=hour), parse_mode="Markdown")
+                          reply_markup=create_clock(H=hour, M=minute), parse_mode="Markdown")
 
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'btnMUp')
 def minute_up(call):
     chat_id = call.message.chat.id
-    minute = int(call.data[6:])+1
+    hour = int(call.data[6:8])
+    minute = int(call.data[8:]) + 1
     bot.edit_message_text(text="🕒 *Укажите время начала игры* 🕒", chat_id=chat_id, message_id=call.message.message_id,
-                          reply_markup=create_clock(M=minute), parse_mode="Markdown")
+                          reply_markup=create_clock(H=hour, M=minute), parse_mode="Markdown")
 
 
-@bot.callback_query_handler(func=lambda call: call.data[0:7] == 'btnMDown')
+@bot.callback_query_handler(func=lambda call: call.data[0:8] == 'btnMDown')
 def minute_down(call):
     chat_id = call.message.chat.id
-    minute = int(call.data[7:]) - 1
+    hour = int(call.data[8:10])
+    minute = int(call.data[10:]) - 1
     bot.edit_message_text(text="🕒 *Укажите время начала игры* 🕒", chat_id=chat_id, message_id=call.message.message_id,
-                          reply_markup=create_clock(M=minute), parse_mode="Markdown")
+                          reply_markup=create_clock(H=hour, M=minute), parse_mode="Markdown")
 
 # -----------------------------------------------------------------------------------------------------
 # Запись собраной инф. об игре из временного списка в базу

@@ -42,22 +42,23 @@ def create_calendar(year,month):
 
 
 def create_clock(H=0, M=0):
+    if H == 24: H = 0
+    if H == -1: H = 23
+    if M == 60: M = 0
+    if M == -1: M = 59
     H = str(H)
     M = str(M)
-    if len(H) == 1:
-        H = '0'+H
-    if len(M) == 1:
-        M = '0'+M
+    if len(H) == 1: H = '0'+H
+    if len(M) == 1: M = '0'+M
     markup = types.InlineKeyboardMarkup(row_width=1)
     btnH = types.InlineKeyboardButton(text=H, callback_data="ignore")
     btnM = types.InlineKeyboardButton(text=M, callback_data="ignore")
     markup.row(btnH, btnM)
-    btnHUp = types.InlineKeyboardButton("🔼", callback_data="btnHUp"+H)
-    btnMUp = types.InlineKeyboardButton("🔼", callback_data="btnMUp"+M)
+    btnHUp = types.InlineKeyboardButton("🔼", callback_data="btnHUp"+H+M)
+    btnMUp = types.InlineKeyboardButton("🔼", callback_data="btnMUp"+H+M)
     markup.row(btnHUp, btnMUp)
-    btnHDown = types.InlineKeyboardButton("🔽", callback_data="btnHDown"+H)
-    btnMDown = types.InlineKeyboardButton("🔽", callback_data="btnMDown"+M)
+    btnHDown = types.InlineKeyboardButton("🔽", callback_data="btnHDown"+H+M)
+    btnMDown = types.InlineKeyboardButton("🔽", callback_data="btnMDown"+H+M)
     markup.row(btnHDown, btnMDown)
     markup.add(types.InlineKeyboardButton("Далее", callback_data="datetime"+H+M))
-
     return markup
