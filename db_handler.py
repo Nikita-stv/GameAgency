@@ -186,7 +186,7 @@ class db_handler:
             conn.close()
 
     def insert_games(self, game):
-        query = "INSERT INTO list_of_games(id,name,description, number_of_levels,date,owner) VALUES(%s,%s,%s,%s,%s,%s)"
+        query = "INSERT INTO list_of_games(id,name,description, number_of_levels,date,owner,code) VALUES(%s,%s,%s,%s,%s,%s,%s)"
         #game = tuple(game)
         arg = []
         tup = tuple(item for item in game)

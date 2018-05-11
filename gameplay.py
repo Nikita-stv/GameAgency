@@ -7,6 +7,9 @@ from db_handler import db_handler
 from tcalendar import create_calendar, create_clock
 from configparser import ConfigParser
 from telebot import apihelper
+import string
+import random
+
 
 
 apihelper.proxy = {'https':'http://127.0.0.1:1080'}
@@ -203,13 +206,14 @@ def datetimes(call):
             games.append(str(dt))  # записываем дату проведения во временный список
             games.insert(0, int(time.time()))  # формируем id игры
             games.append(call.from_user.id)  # записываем владельца созданной игры
+            games.append(''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6)))  # уникальный код игры
             markup = types.InlineKeyboardMarkup(row_width=1)
             itembtnA = types.InlineKeyboardButton("Создать", callback_data="create")
             itembtnB = types.InlineKeyboardButton("Ввести заново", callback_data="anew")
             markup.row(itembtnA, itembtnB)
             bot.edit_message_text(
-                text="Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*".format(
-                    games[1], games[2], games[3], games[4]), chat_id=chat_id, message_id=call.message.message_id,
+                text="Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*\nКод игры: *{}*".format(
+                    games[1], games[2], games[3], games[4], games[6]), chat_id=chat_id, message_id=call.message.message_id,
                 reply_markup=markup, parse_mode="Markdown")
             bot.answer_callback_query(call.id, text="")
         else:  # редактирование даты игры
@@ -341,8 +345,8 @@ def edit_mess(call):
     markup.row(btn, btn1, btn2, btn3)
     markup.row(btn4, btn5)
     property = db.sample('games', call.data[4:])[0]
-    bot.edit_message_text(text="📣 *Название игры*\n{}\n\n📝 *Описание*\n{}\n\n📅 *Дата начала игры*\n{}\n\n📚 *Количество уровней*\n{}\n--------------------------------------------------\n⬇️*Нажми, чтобы изменить*⬇️"
-                     .format(property[1], property[2], property[4], property[3]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown", disable_web_page_preview=True)
+    bot.edit_message_text(text="📣 *Название игры*\n{}\n\n📝 *Описание*\n{}\n\n📅 *Дата начала игры*\n{}\n\n📚 *Количество уровней*\n{}\n\n🎛 *Код игры*\n{}\n--------------------------------------------------\n⬇️*Нажми, чтобы изменить*⬇️"
+                     .format(property[1], property[2], property[4], property[3], property[6]), chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown", disable_web_page_preview=True)
 
 # ------------------------------------------------------------------------------------------------------
 # Редактирование игр
@@ -475,17 +479,16 @@ def add_level(call):
 # ------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------
 #
-
 def play(message):
     code = message.text
     print(code)
-
 
 @bot.message_handler(commands=['play'])
 def start_handler(message):
     chat_id = message.chat.id
     sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
     bot.register_next_step_handler(message=sent, callback=play)
+
 
 
 
