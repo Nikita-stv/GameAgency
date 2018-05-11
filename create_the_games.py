@@ -6,10 +6,10 @@ import time
 from db_handler import db_handler
 from tcalendar import create_calendar, create_clock
 from configparser import ConfigParser
-
 from telebot import apihelper
 
-apihelper.proxy = {'https':'http://127.0.0.1:999'}
+
+apihelper.proxy = {'https':'http://127.0.0.1:1080'}
 
 #--------------------------------------------------------------------------------------------------
 
@@ -287,9 +287,9 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
         itembtn = types.InlineKeyboardButton(i[1] + " 🔧", callback_data="edit" + str(i[0]))
         markup.row(itembtn)
     if send:
-        bot.send_message(chat_id, "Список игр 🎲", reply_markup=markup)
+        bot.send_message(chat_id, "🎲 Список игр 🎲", reply_markup=markup)
     else:
-        bot.edit_message_text(chat_id=chat_id, text="Список игр 🎲", message_id=mess, reply_markup=markup)
+        bot.edit_message_text(chat_id=chat_id, text="🎲 Список игр 🎲", message_id=mess, reply_markup=markup)
 
 
 @bot.message_handler(commands=['my_games'])
@@ -473,7 +473,19 @@ def add_level(call):
 
 
 # ------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------
+#
 
+def play(message):
+    code = message.text
+    print(code)
+
+
+@bot.message_handler(commands=['play'])
+def start_handler(message):
+    chat_id = message.chat.id
+    sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
+    bot.register_next_step_handler(message=sent, callback=play)
 
 
 
