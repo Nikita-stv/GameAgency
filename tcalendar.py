@@ -41,7 +41,7 @@ def create_calendar(year,month):
     return markup
 
 
-def create_clock(H=0, M=0):
+def create_clock(H=16, M=0):
     if H == 24: H = 0
     if H == -1: H = 23
     if M == 60: M = 0

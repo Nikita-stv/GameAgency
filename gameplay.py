@@ -477,14 +477,41 @@ def add_level(call):
 
 
 # ------------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------
 #
+
+def level(message, args):
+    chat_id = message.chat.id
+    print(args)
+    #db.gameplay_req(game[0][0], chat_id, 1)
+
+
+
 def play(message):
     code = message.text
-    print(code)
+    chat_id = message.chat.id
+    game = db.sample('code', code)
+    print(game)
+    if game:
+        bot.send_message(text="{} \n\n{}".format(game[0][1], game[0][2]), chat_id=chat_id)
+        gp_for_chat = db.gameplay_req([game[0][0], chat_id])
+        if gp_for_chat:
+            #print(gp_for_chat)
+            levels = db.select_levels([game[0][0]])
+            print(levels)
+            current_level = gp_for_chat[0][2]
+            sent = bot.send_message(text="{} \n\n{}".format(levels[current_level-1][3], levels[current_level-1][4]), chat_id=chat_id)
+            bot.register_next_step_handler(message=sent, callback=level, args='1')
+
+        else:
+            db.gameplay_ins(game[0][0], chat_id, 1)
+
+    else:
+        bot.send_message(text="Код неверный!", chat_id=chat_id)
+
 
 @bot.message_handler(commands=['play'])
-def start_handler(message):
+def play_handler(message):
     chat_id = message.chat.id
     sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
     bot.register_next_step_handler(message=sent, callback=play)

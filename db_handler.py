@@ -32,6 +32,27 @@ class db_handler:
 # ____________________________________________________________________________________________
 # Блок получения выборок из базы
 
+    def gameplay_req(self, args):
+        try:
+            result = []
+            query = "SELECT * FROM gameplay WHERE game_id=%s AND chat_id=%s"
+            dbconfig = self.read_db_config()
+            conn = MySQLConnection(**dbconfig)
+            cursor = conn.cursor()
+            cursor.execute(query, args)
+            rows = cursor.fetchall()
+            for row in rows:
+                result.append(row)
+            return result
+
+        except Error as e:
+            print(e)
+
+        finally:
+            cursor.close()
+            conn.close()
+
+
     def query_with_fetchone(self):
         try:
             dbconfig = self.read_db_config()
@@ -146,6 +167,8 @@ class db_handler:
                 query = "SELECT * FROM list_of_games WHERE owner=%s"
             elif param == 'games':
                 query = "SELECT * FROM list_of_games WHERE id=%s"
+            elif param == 'code':
+                query = "SELECT * FROM list_of_games WHERE code=%s"
             result = []
             dbconfig = self.read_db_config()
             conn = MySQLConnection(**dbconfig)
@@ -165,6 +188,21 @@ class db_handler:
 
 #____________________________________________________________________________________________
 # Блок записи в базу
+
+    def gameplay_ins(self, game_id, chat_id, level):
+        query = "INSERT INTO gameplay(game_id, chat_id, level) VALUES(%s,%s,%s)"
+        args = (game_id, chat_id, level)
+        try:
+            db_config = self.read_db_config()
+            conn = MySQLConnection(**db_config)
+            cursor = conn.cursor()
+            cursor.execute(query, args)
+            conn.commit()
+        except Error as error:
+            print(error)
+        finally:
+            cursor.close()
+            conn.close()
 
     def insert_admins(self, id_admin, name_admin):
         query = "INSERT INTO admins(id,name) VALUES(%s,%s)"
