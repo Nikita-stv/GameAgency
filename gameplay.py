@@ -9,11 +9,14 @@ from configparser import ConfigParser
 from telebot import apihelper
 import string
 import random
-
+import logging
 
 
 apihelper.proxy = {'https':'http://127.0.0.1:1080'}
 
+
+logger = telebot.logger
+telebot.logger.setLevel(logging.DEBUG) # Outputs debug messages to console.
 #--------------------------------------------------------------------------------------------------
 
 def read_config(filename='config.ini', section='bot'):
@@ -480,34 +483,34 @@ def add_level(call):
 # ------------------------------------------------------------------------------------------------------
 #
 
-def level(message, args):
+def level(message):
     chat_id = message.chat.id
-    print(args)
-    #db.gameplay_req(game[0][0], chat_id, 1)
+    answer = message.text
+    print(answer)
 
 
-
+@bot.callback_query_handler(func=lambda f: f)
 def play(message):
     code = message.text
     chat_id = message.chat.id
     game = db.sample('code', code)
+    bot.clear_step_handler(message)
     print(game)
     if game:
         bot.send_message(text="{} \n\n{}".format(game[0][1], game[0][2]), chat_id=chat_id)
+        levels = db.select_levels([game[0][0]])
         gp_for_chat = db.gameplay_req([game[0][0], chat_id])
         if gp_for_chat:
-            #print(gp_for_chat)
-            levels = db.select_levels([game[0][0]])
-            print(levels)
             current_level = gp_for_chat[0][2]
-            sent = bot.send_message(text="{} \n\n{}".format(levels[current_level-1][3], levels[current_level-1][4]), chat_id=chat_id)
-            bot.register_next_step_handler(message=sent, callback=level, args='1')
-
         else:
             db.gameplay_ins(game[0][0], chat_id, 1)
-
+            current_level = 1
+        sent = bot.send_message(text="{} \n\n{}".format(levels[current_level - 1][3], levels[current_level - 1][4]),
+                                chat_id=chat_id)
+        bot.register_next_step_handler(message=sent, callback=level)
     else:
-        bot.send_message(text="Код неверный!", chat_id=chat_id)
+        sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
+        bot.register_next_step_handler(message=sent, callback=play)
 
 
 @bot.message_handler(commands=['play'])
@@ -516,6 +519,7 @@ def play_handler(message):
     sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
     bot.register_next_step_handler(message=sent, callback=play)
 
+# ------------------------------------------------------------------------------------------------------
 
 
 
