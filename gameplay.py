@@ -509,8 +509,8 @@ def play(message):
                                 chat_id=chat_id)
         bot.register_next_step_handler(message=sent, callback=level)
     else:
-        sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
-        bot.register_next_step_handler(message=sent, callback=play)
+        sent = bot.send_message(text="Код неверный! \n\n🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
+        #bot.register_next_step_handler(message=sent, callback=play)
 
 
 @bot.message_handler(commands=['play'])
