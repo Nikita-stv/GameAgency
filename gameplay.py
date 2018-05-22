@@ -4,6 +4,7 @@ import telebot
 from telebot import types
 import time
 from db_handler import db_handler
+from alchemy import Alchemy
 from tcalendar import create_calendar, create_clock
 from configparser import ConfigParser
 from telebot import apihelper
@@ -45,7 +46,7 @@ cf = read_config()
 
 bot = telebot.TeleBot(cf['token'], threaded=False)
 db = db_handler()
-
+alchemy = Alchemy()
 #-----------------------------------------------------------------------------------------------------
 # Webhook
 
@@ -62,6 +63,15 @@ def webhook():
     return "ok", 200
 
 # -----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 # -----------------------------------------------------------------------------------------------------
 # Блок с параметрами
 
@@ -82,7 +92,8 @@ def channel_handler(message):
 
 def admin_handler(func):
     def wrapper(arg):
-        if arg.from_user.id in db.search_admin():
+        #if arg.from_user.id in db.search_admin():
+        if arg.from_user.id in alchemy.select():
             return func(arg)
         else:
             bot.reply_to(arg, "Вы не являетесь администратором!")
