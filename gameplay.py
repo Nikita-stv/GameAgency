@@ -93,7 +93,7 @@ def channel_handler(message):
 def admin_handler(func):
     def wrapper(arg):
         #if arg.from_user.id in db.search_admin():
-        if arg.from_user.id in alchemy.select():
+        if arg.from_user.id in alchemy.select_admin():
             return func(arg)
         else:
             bot.reply_to(arg, "Вы не являетесь администратором!")
@@ -280,11 +280,13 @@ def minute_down(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'create')
 def set_game(call):
-    db.insert_games(games)
+    #db.insert_games(games)
+    alchemy.insert_game(games)
     chat_id = call.message.chat.id
     mess = call.message.message_id
     list_of_games = db.sample('owner', call.from_user.id)
-    db.create_levels(game_id=int(games[0]), lev=int(games[3]))
+    #db.create_levels(game_id=int(games[0]), lev=int(games[3]))
+    alchemy.insert_levels(game_id=int(games[0]), lev=int(games[3]))
     my_games(chat_id, list_of_games, mess=mess, send=False)
     del games[:]
 

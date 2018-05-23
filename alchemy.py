@@ -42,25 +42,35 @@ class Alchemy:
                               Column('description', String(50)),
                               Column('number_of_levels', Integer),
                               Column('date', DateTime),
-                              Column('owner', Integer, ForeignKey('admins.telegram_id')),
+                              Column('owner', Integer),
                               Column('code', String(6)),
                               Column('sequence', String(50))
                               )
 
 
-        engine = create_engine('mysql+mysqlconnector://root:Stavstat12@127.0.0.1:3306/ga2')
-        self.metadata.create_all(engine)
-        self.conn = engine.connect()
+        self.engine = create_engine('mysql+mysqlconnector://root:Stavstat12@127.0.0.1:3306/ga2')
+        self.metadata.create_all(self.engine)
+        conn = self.engine.connect()
 
     # INSERT
-    #insert_stmt = admins.insert().values(telegram_id='235987482', name='Beeline')
-    #conn = engine.connect()
-    #result = conn.execute(insert_stmt)
+    def insert_game(self, game):
+        conn = self.engine.connect()
+        print(game)
+        conn.execute(self.list_of_games.insert().values(name=game[1],description=game[2], number_of_levels=game[3],date=game[4],owner=game[5], code=game[6]))
+        #conn.execute(self.list_of_games.insert(), [ {'username': 'jack', 'fullname': 'Jack Burger'}, {'username': 'wendy', 'fullname': 'Wendy Weathersmith'}])
+
+    def insert_levels(self, game_id, lev):
+        conn = self.engine.connect()
+        param = []
+        for i in range(lev):
+            param.append({'game_id':game_id, 'sn':i+1})
+        conn.execute(self.levels.insert(), param)
+
 
     # SELECT
-    def select(self):
-        select_admin = select([self.admins.c.telegram_id])
-        adm = self.conn.execute(select_admin).fetchall()
+    def select_admin(self):
+        conn = self.engine.connect()
+        adm = conn.execute(select([self.admins.c.telegram_id])).fetchall()
         result = []
         for row in adm:
             result.append(row[0])
