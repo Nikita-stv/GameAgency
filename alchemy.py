@@ -1,80 +1,98 @@
-from sqlalchemy import MetaData
-from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Numeric, DateTime, Enum
-from sqlalchemy import create_engine, select
+from sqlalchemy import Column
+from sqlalchemy import Integer, String, DateTime
+from sqlalchemy import create_engine
 from sqlalchemy import ForeignKey
-from sqlalchemy import Unicode, UnicodeText
-from sqlalchemy import ForeignKeyConstraint
-from sqlalchemy import inspect
-from sqlalchemy.dialects import mysql
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 
-class Alchemy:
-
-    def __init__(self):
-        self.metadata = MetaData()
-
-        self.admins = Table('admins', self.metadata,
-                           Column('id', Integer, primary_key=True),
-                           Column('telegram_id', Integer),
-                           Column('name', String(50))
-                           )
-
-        self.gameplay = Table('gameplay', self.metadata,
-                                Column('game_id', Integer, ForeignKey('list_of_games.id')),
-                                Column('chat_id', Integer),
-                                Column('level', Integer)
-                                )
-
-        self.levels = Table('levels', self.metadata,
-                       Column('id', Integer, primary_key=True),
-                       Column('game_id', Integer),
-                       Column('sn', Integer),
-                       Column('header', String(50)),
-                       Column('task', String(50)),
-                       Column('answer', String(50)),
-                       Column('tip', String(50))
-                       )
-
-        self.list_of_games = Table('list_of_games', self.metadata,
-                              Column('id', Integer, primary_key=True),
-                              Column('name', String(50)),
-                              Column('description', String(50)),
-                              Column('number_of_levels', Integer),
-                              Column('date', DateTime),
-                              Column('owner', Integer),
-                              Column('code', String(6)),
-                              Column('sequence', String(50))
-                              )
+Base = declarative_base()
+engine = create_engine('mysql+mysqlconnector://root:Stavstat12@127.0.0.1:3306/ga2')
 
 
-        self.engine = create_engine('mysql+mysqlconnector://root:Stavstat12@127.0.0.1:3306/ga2')
-        self.metadata.create_all(self.engine)
-        conn = self.engine.connect()
+class Admins(Base):
+    __tablename__ = 'admins'
+    id = Column(Integer, primary_key=True)
+    t_id = Column(Integer)
+    name = Column(String(50))
 
-    # INSERT
-    def insert_game(self, game):
-        conn = self.engine.connect()
-        print(game)
-        conn.execute(self.list_of_games.insert().values(name=game[1],description=game[2], number_of_levels=game[3],date=game[4],owner=game[5], code=game[6]))
-        #conn.execute(self.list_of_games.insert(), [ {'username': 'jack', 'fullname': 'Jack Burger'}, {'username': 'wendy', 'fullname': 'Wendy Weathersmith'}])
-
-    def insert_levels(self, game_id, lev):
-        conn = self.engine.connect()
-        param = []
-        for i in range(lev):
-            param.append({'game_id':game_id, 'sn':i+1})
-        conn.execute(self.levels.insert(), param)
+    def __init__(self, t_id, name):
+        self.t_id = t_id
+        self.name = name
 
 
-    # SELECT
-    def select_admin(self):
-        conn = self.engine.connect()
-        adm = conn.execute(select([self.admins.c.telegram_id])).fetchall()
-        result = []
-        for row in adm:
-            result.append(row[0])
-        return result
+class Gameplay(Base):
+    __tablename__ = 'gameplay'
+    id = Column(Integer, primary_key=True)
+    game_id = Column(Integer)
+    chat_id = Column(Integer)
+    level = Column(Integer)
 
-#print(str(Alchemy.select()))
-#Alchemy().select()
+    def __init__(self, game_id, chat_id, level):
+        self.game_id = game_id
+        self.chat_id = chat_id
+        self.level = level
+
+
+class Levels(Base):
+    __tablename__ = 'levels'
+    id = Column(Integer, primary_key=True)
+    game_id = Column(Integer)
+    sn = Column(Integer)
+    header = Column(String(50))
+    task = Column(String(50))
+    answer = Column(String(50))
+    tip = Column(String(50))
+
+    def __init__(self, game_id, sn, header, task, answer, tip):
+        self.game_id = game_id
+        self.sn = sn
+        self.header = header
+        self.task = task
+        self.answer = answer
+        self.tip = tip
+
+
+class Games(Base):
+    __tablename__ = 'games'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50))
+    descrition = Column(String(150))
+    number_of_levels = Column(Integer)
+    date = Column(DateTime)
+    owner = Column(Integer)
+    code = Column(String(50))
+    #sequence = Column(String(50))
+
+    def __init__(self, name, description, number_of_levels, date, owner, code):
+        self.name = name
+        self.descrition = description
+        self.number_of_levels = number_of_levels
+        self.date = date
+        self.owner = owner
+        self.code = code
+        #self.sequence = sequence
+
+
+Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)                           # Инициализация сессии
+session = Session()
+
+#session.add(Admins(235987482, 'beeline'))
+#session.add(Games('ggg', 'ggg', 5, '2018-05-24 16:00:00', 235987482, 'IUP8W7'))
+
+
+
+session.commit()                                              # Запись в БД
+
+#for i in session.query(Admins.id):
+#    print(i.id)
+
+#if i in session.query(Admins.id):
+#    print('yes')
+
+#print(list(session.query(Admins.id)))
+
+#result = list(map(lambda x: x[0], session.query(Admins.id)))
+#print(result)

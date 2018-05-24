@@ -4,14 +4,15 @@ import telebot
 from telebot import types
 import time
 from db_handler import db_handler
-from alchemy import Alchemy
+from alchemy import Admins, Levels, Gameplay, Games
 from tcalendar import create_calendar, create_clock
 from configparser import ConfigParser
 from telebot import apihelper
 import string
 import random
 import logging
-
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
 apihelper.proxy = {'https':'http://127.0.0.1:1080'}
 
@@ -46,7 +47,12 @@ cf = read_config()
 
 bot = telebot.TeleBot(cf['token'], threaded=False)
 db = db_handler()
-alchemy = Alchemy()
+
+db_admins = Admins
+db_levels = Levels
+db_gameplay = Gameplay
+db_games = Games
+#db_session = session
 #-----------------------------------------------------------------------------------------------------
 # Webhook
 
@@ -65,10 +71,9 @@ def webhook():
 # -----------------------------------------------------------------------------------------------------
 
 
-
-
-
-
+engine = create_engine('mysql+mysqlconnector://root:Stavstat12@127.0.0.1:3306/ga2')
+Session = sessionmaker(bind=engine)                           # Инициализация сессии
+session = Session()
 
 
 
@@ -93,7 +98,8 @@ def channel_handler(message):
 def admin_handler(func):
     def wrapper(arg):
         #if arg.from_user.id in db.search_admin():
-        if arg.from_user.id in alchemy.select_admin():
+
+        if arg.from_user.id in list(map(lambda x: x[0], session.query(db_admins.t_id))):
             return func(arg)
         else:
             bot.reply_to(arg, "Вы не являетесь администратором!")
@@ -281,13 +287,17 @@ def minute_down(call):
 @bot.callback_query_handler(func=lambda call: call.data == 'create')
 def set_game(call):
     #db.insert_games(games)
-    alchemy.insert_game(games)
+    current_game = Games(games[1], games[2], int(games[3]), games[4], games[5], games[6])
+    session.add(current_game)
+    session.commit()
     chat_id = call.message.chat.id
     mess = call.message.message_id
     list_of_games = db.sample('owner', call.from_user.id)
     #db.create_levels(game_id=int(games[0]), lev=int(games[3]))
-    alchemy.insert_levels(game_id=int(games[0]), lev=int(games[3]))
+    for i in range(int(games[3])):
+        session.add(db_levels(current_game.id, i+1, 'None', 'None', 'None', 'None'))
     my_games(chat_id, list_of_games, mess=mess, send=False)
+    session.commit()
     del games[:]
 
 @bot.callback_query_handler(func=lambda call: call.data == 'anew')
@@ -317,7 +327,8 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
 def mygame_handler(message):
     del games[:]
     chat_id = message.chat.id
-    list_of_games = db.sample('owner', message.from_user.id)
+    #list_of_games = db.sample('owner', message.from_user.id)
+    list_of_games = db_session.query(db_games.owner)
     my_games(chat_id, list_of_games)
 
 
