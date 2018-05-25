@@ -20,6 +20,45 @@ class Admins(Base):
         self.t_id = t_id
         self.name = name
 
+class Games(Base):
+    __tablename__ = 'games'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50))
+    description = Column(String(150))
+    number_of_levels = Column(Integer)
+    date = Column(DateTime)
+    owner = Column(Integer)
+    code = Column(String(50))
+    #sequence = Column(String(50))
+
+    def __init__(self, name, description, number_of_levels, date, owner, code):
+        self.name = name
+        self.description = description
+        self.number_of_levels = number_of_levels
+        self.date = date
+        self.owner = owner
+        self.code = code
+        #self.sequence = sequence
+
+
+class Levels(Base):
+    __tablename__ = 'levels'
+    id = Column(Integer, primary_key=True)
+    game_id = Column(Integer)
+    sn = Column(Integer)
+    header = Column(String(50), nullable=True)
+    task = Column(String(50), nullable=True)
+    answer = Column(String(50), nullable=True)
+    tip = Column(String(50), nullable=True)
+
+    def __init__(self, game_id, sn, header, task, answer, tip):
+        self.game_id = game_id
+        self.sn = sn
+        self.header = header
+        self.task = task
+        self.answer = answer
+        self.tip = tip
+
 
 class Gameplay(Base):
     __tablename__ = 'gameplay'
@@ -34,44 +73,7 @@ class Gameplay(Base):
         self.level = level
 
 
-class Levels(Base):
-    __tablename__ = 'levels'
-    id = Column(Integer, primary_key=True)
-    game_id = Column(Integer)
-    sn = Column(Integer)
-    header = Column(String(50))
-    task = Column(String(50))
-    answer = Column(String(50))
-    tip = Column(String(50))
 
-    def __init__(self, game_id, sn, header, task, answer, tip):
-        self.game_id = game_id
-        self.sn = sn
-        self.header = header
-        self.task = task
-        self.answer = answer
-        self.tip = tip
-
-
-class Games(Base):
-    __tablename__ = 'games'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-    descrition = Column(String(150))
-    number_of_levels = Column(Integer)
-    date = Column(DateTime)
-    owner = Column(Integer)
-    code = Column(String(50))
-    #sequence = Column(String(50))
-
-    def __init__(self, name, description, number_of_levels, date, owner, code):
-        self.name = name
-        self.descrition = description
-        self.number_of_levels = number_of_levels
-        self.date = date
-        self.owner = owner
-        self.code = code
-        #self.sequence = sequence
 
 
 Base.metadata.create_all(engine)
@@ -84,10 +86,14 @@ session = Session()
 
 
 
-session.commit()                                              # Запись в БД
+#session.commit()                                              # Запись в БД
 
-#for i in session.query(Admins.id):
+#for i in session.query(Games).filter_by(owner=235987482).all():
 #    print(i.id)
+
+#s=session.query(Games).filter_by(owner=235987482).all()
+#print(s[0].id)
+
 
 #if i in session.query(Admins.id):
 #    print('yes')
