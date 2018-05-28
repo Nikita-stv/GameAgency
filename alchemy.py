@@ -63,15 +63,19 @@ class Levels(Base):
 class Gameplay(Base):
     __tablename__ = 'gameplay'
     id = Column(Integer, primary_key=True)
-    game_id = Column(Integer)
     chat_id = Column(Integer)
-    level = Column(Integer)
+    game_id = Column(Integer)
+    level_id = Column(Integer)
+    #level = Column(Integer)
+    start_time = Column(DateTime, nullable=True)
+    finish_time = Column(DateTime, nullable=True)
 
-    def __init__(self, game_id, chat_id, level):
+    def __init__(self, chat_id, game_id, level_id, start_time, finish_time):
         self.game_id = game_id
         self.chat_id = chat_id
-        self.level = level
-
+        self.level_id = level_id
+        self.start_time = start_time
+        self.finish_time = finish_time
 
 
 
