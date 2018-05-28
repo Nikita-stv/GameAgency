@@ -81,6 +81,7 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)                           # Инициализация сессии
 session = Session()
 
+
 #session.add(Admins(235987482, 'beeline'))
 #session.add(Games('ggg', 'ggg', 5, '2018-05-24 16:00:00', 235987482, 'IUP8W7'))
 
@@ -102,3 +103,10 @@ session = Session()
 
 #result = list(map(lambda x: x[0], session.query(Admins.id)))
 #print(result)
+
+
+#req = session.query(Levels).filter_by(id=17)
+#game_id = req.first()
+
+#print(game_id.game_id)
+#req.delete()

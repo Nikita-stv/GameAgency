@@ -12,7 +12,7 @@ import string
 import random
 import logging
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 
 apihelper.proxy = {'https':'http://127.0.0.1:1080'}
 
@@ -299,7 +299,6 @@ def set_game(call):
     for i in range(int(current_game.number_of_levels)):
         session.add(db_levels(current_game.id, i+1, 'None', 'None', 'None', 'None'))
     session.commit()
-    #list_of_games = db.sample('owner', call.from_user.id)
     list_of_games = session.query(db_games).filter_by(owner=call.from_user.id).all()
     my_games(chat_id, list_of_games, mess=mess, send=False)
 
@@ -331,7 +330,6 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
 @admin_handler
 def mygame_handler(message):
     chat_id = message.chat.id
-    #list_of_games = db.sample('owner', message.from_user.id)
     list_of_games = session.query(db_games).filter_by(owner=message.from_user.id).all()
     my_games(chat_id, list_of_games)
 
@@ -342,15 +340,10 @@ def mygame_handler(message):
 @bot.callback_query_handler(func=lambda call: call.data[0:3] == 'del')
 def del_game(call):
     chat_id = call.message.chat.id
-    mess = call.message.message_id
-    #db.delete('del_game', call.data[3:])
-    #db.delete('del_all_lev', call.data[3:])
     session.query(db_games).filter_by(id=call.data[3:]).delete()
     session.query(db_levels).filter_by(game_id=call.data[3:]).delete()
     session.commit()
-    #list_of_games = db.sample('owner', call.from_user.id)
     list_of_games = session.query(db_games).filter_by(owner=call.from_user.id).all()
-    #my_games(chat_id, list_of_games, send=False, mess=mess)
     my_games(chat_id, list_of_games)
 
 # ------------------------------------------------------------------------------------------------------
@@ -376,12 +369,11 @@ def edit_mess(call):
     btn1 = types.InlineKeyboardButton("📝", callback_data="egdscr" + call.data[5:])
     btn2 = types.InlineKeyboardButton("📅", callback_data="egdate" + call.data[5:])
     btn3 = types.InlineKeyboardButton("📚", callback_data="levels" + call.data[5:])
-    btn4 = types.InlineKeyboardButton("⬅️", callback_data="back" + call.data[5:])
+    btn4 = types.InlineKeyboardButton("⬅️", callback_data="back1" + call.data[5:])
     btn5 = types.InlineKeyboardButton("❗🗑❗️", callback_data="del" + call.data[5:])
     markup = types.InlineKeyboardMarkup(1)
     markup.row(btn, btn1, btn2, btn3)
     markup.row(btn4, btn5)
-    #property = db.sample('games', call.data[4:])[0]
     property = session.query(db_games).filter_by(id=call.data[5:]).first()
     bot.edit_message_text(text="📣 *Название игры*\n{}\n\n📝 *Описание*\n{}\n\n📅 *Дата начала игры*\n{}\n\n"
                                "📚 *Количество уровней*\n{}\n\n🎛 *Код игры*\n{}\n"
@@ -442,12 +434,11 @@ def update_day(call):
 # Список уровней !!!
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'levels')
-def edit_levels(call):
+def list_of_levels(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     markup = types.InlineKeyboardMarkup(row_width=5)
-    #levels = db.select_levels([int(call.data[6:16])])
-    levels = session.query(db_levels).filter_by(game_id=int(call.data[6:16])).all()
+    levels = session.query(db_levels).filter_by(game_id=int(call.data[6:])).all()
     lev = ''
     btns=[]
     for i in levels:
@@ -467,14 +458,13 @@ def edit_level(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     markup = types.InlineKeyboardMarkup(row_width=5)
-    #level = db.select_level([int(call.data[6:])])
     level = session.query(db_levels).filter_by(id=int(call.data[6:])).first()
     itembtn  = types.InlineKeyboardButton(text="🏷", callback_data="elhead" + str(level.id))
     itembtn1 = types.InlineKeyboardButton(text="📕", callback_data="eltask" + str(level.id))
     itembtn2 = types.InlineKeyboardButton(text="🔑", callback_data="elansw" + str(level.id))
     itembtn3 = types.InlineKeyboardButton(text="💡", callback_data="eletip" + str(level.id))
     itembtn4 = types.InlineKeyboardButton(text="⬅️", callback_data="levels" + str(level.game_id))
-    itembtn5 = types.InlineKeyboardButton(text="❗🗑❗", callback_data="le_del" + str(level.game_id) + str(level.id))
+    itembtn5 = types.InlineKeyboardButton(text="❗🗑❗", callback_data="le_del" + str(level.id))
     markup.add(itembtn, itembtn1, itembtn2, itembtn3)
     markup.add(itembtn4, itembtn5)
     bot.edit_message_text(text="🏷 *Название уровня*\n{}\n\n📕 *Задание*\n{}\n\n🔑 *Ответ*\n{}\n\n💡 *Подсказка*\n{}"
@@ -488,8 +478,17 @@ def edit_level(call):
 
 def update_level(message):
     chat_id = message.chat.id
-    db.update_game(param=param, value=message.text, id=id_level)
-    btn = types.InlineKeyboardButton("Далее", callback_data="elevel" + id_level)
+    level_update = session.query(db_levels).filter_by(id=id_level).first()
+    if param == 'elhead':
+        level_update.header = message.text
+    elif param == 'eltask':
+        level_update.task = message.text
+    elif param == 'elansw':
+        level_update.answer = message.text
+    elif param == 'eletip':
+        level_update.tip = message.text
+    session.commit()
+    btn = types.InlineKeyboardButton("Далее", callback_data="elevel" + str(id_level))
     markup = types.InlineKeyboardMarkup(1)
     markup.add(btn)
     bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
@@ -502,7 +501,7 @@ def update_header(call):
     mess = call.message.message_id
     global id_level, param
     param = call.data[0:6]
-    id_level = call.data[6:]
+    id_level = int(call.data[6:])
     sent = bot.edit_message_text(text="Введите новое значение", chat_id=chat_id, message_id=mess, reply_markup=None)
     bot.register_next_step_handler(message=sent, callback=update_level)
 
@@ -511,21 +510,30 @@ def update_header(call):
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'le_del')
 def del_level(call):
-    db.delete('del_level', call.data[16:])
-    num = db.sample('sn', call.data[6:16])
-    for i in range(len(num)):
-        db.update_game('sn', i+1, num[i][0])
-    db.update_game('nol', len(num), call.data[6:16])
-    edit_levels(call)
+    req = session.query(db_levels).filter_by(id=int(call.data[6:]))
+    req_first = req.first()
+    game_id = req_first.game_id
+    req.delete()
+    req = session.query(db_levels).filter_by(game_id=game_id).all()
+    count = 1
+    for i in req:
+        i.sn = count
+        count += 1
+    req = session.query(db_games).filter_by(id=game_id).first()
+    req.number_of_levels = req.number_of_levels - 1
+    session.commit()
+    call.data = 'levels' + str(game_id)
+    list_of_levels(call)
 
 # добавление уровня
 
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'addlev')
 def add_level(call):
-    num = db.sample('sn', call.data[6:])
-    db.add_level(call.data[6:], len(num) + 1)
-    db.update_game('nol', len(num)+1, call.data[6:])
-    edit_levels(call)
+    count = session.query(db_levels.game_id).filter_by(game_id=int(call.data[6:])).count()
+    session.add(db_levels(call.data[6:], count+1, 'None', 'None', 'None', 'None'))
+    game = session.query(db_games).filter_by(id=int(call.data[6:])).first()
+    game.number_of_levels = game.number_of_levels + 1
+    list_of_levels(call)
 
 
 # ------------------------------------------------------------------------------------------------------
