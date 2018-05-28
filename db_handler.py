@@ -6,8 +6,6 @@ import time
 
 
 class db_handler:
-
-
     def read_db_config(self, filename='config.ini', section='mysql'):
         """ Read database configuration file and return a dictionary object
         :param filename: name of the configuration file
