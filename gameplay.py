@@ -585,8 +585,8 @@ def level_handler(message):
             sent = bot.send_message(text="{} \n\n{}".format(next_lev.header, next_lev.task), chat_id=chat_id)
             bot.register_next_step_handler(message=sent, callback=level_handler)
     else:
-        bot.send_message(text="Неверно!", chat_id=chat_id)
-
+        sent = bot.send_message(text="Неверно!", chat_id=chat_id)
+        bot.register_next_step_handler(message=sent, callback=level_handler)
 
 
 
