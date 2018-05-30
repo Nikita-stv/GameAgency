@@ -535,10 +535,12 @@ def add_level(call):
 # ------------------------------------------------------------------------------------------------------
 #
 
-def level(message):
+
+@bot.message_handler(commands=['play'])
+def play_handler(message):
     chat_id = message.chat.id
-    answer = message.text
-    print(answer)
+    sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
+    bot.register_next_step_handler(message=sent, callback=play)
 
 
 #@bot.callback_query_handler(func=lambda f: f)
@@ -549,24 +551,49 @@ def play(message):
     if game:
         g_play = session.query(db_gameplay).filter_by(game_id=game.id, chat_id=chat_id).first() #есть ли игровой процесс для этой игры и чата
         if g_play:
-            current_level = session.query(db_levels).filter_by(id=g_play.level_id).first()      #текущий уровень
-            bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
+            current_level = session.query(db_levels).filter_by(id=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
+            sent = bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
+            bot.register_next_step_handler(message=sent, callback=level_handler)
         else:
             level = session.query(db_levels).filter_by(game_id=game.id, sn=1).first()                             #
-            session.add(db_gameplay(chat_id, game.id, level.id, None, None))
+            session.add(db_gameplay(chat_id=str(chat_id), game_id=game.id, sn_level=1, start_time=None, finish_time=None))
             bot.send_message(text="{} \n\n{}".format(game.name, game.description), chat_id=chat_id)
-            bot.send_message(text="{} \n\n{}".format(level.header, level.task), chat_id=chat_id)  # вывести заголовок и задание
+            sent = bot.send_message(text="{} \n\n{}".format(level.header, level.task), chat_id=chat_id)  # вывести заголовок и задание
+            bot.register_next_step_handler(message=sent, callback=level_handler)
+        session.commit()
+    else:
+        #sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
+        #bot.register_next_step_handler(message=sent, callback=play)
+        bot.send_message(text="Код неверный!", chat_id=chat_id)
 
-    session.commit()
-    #    sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
-    #    bot.register_next_step_handler(message=sent, callback=play)
 
-
-@bot.message_handler(commands=['play'])
-def play_handler(message):
+def level_handler(message):
     chat_id = message.chat.id
-    sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
-    bot.register_next_step_handler(message=sent, callback=play)
+    answer = message.text
+    game_play = session.query(db_gameplay).filter_by(chat_id=chat_id).first()
+    level = session.query(db_levels).filter_by(game_id=game_play.game_id, sn=game_play.sn_level).first()
+    #print(level.answer, answer)
+    if str(level.answer) == str(answer):
+        pg = session.query(db_games).filter_by(id=level.game_id).first()
+        if game_play.sn_level == pg.number_of_levels:
+            bot.send_message(text="Финиш!", chat_id=chat_id)
+        else:
+            game_play.sn_level += 1
+            session.commit()
+            bot.send_message(text="Верно!", chat_id=chat_id)
+            next_lev = session.query(db_levels).filter_by(game_id=game_play.game_id, sn=game_play.sn_level).first()
+            sent = bot.send_message(text="{} \n\n{}".format(next_lev.header, next_lev.task), chat_id=chat_id)
+            bot.register_next_step_handler(message=sent, callback=level_handler)
+    else:
+        bot.send_message(text="Неверно!", chat_id=chat_id)
+
+
+
+
+
+
+
+
 
 # ------------------------------------------------------------------------------------------------------
 
