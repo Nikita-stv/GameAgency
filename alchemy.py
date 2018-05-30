@@ -23,13 +23,12 @@ class Admins(Base):
 class Games(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-    description = Column(String(150))
-    number_of_levels = Column(Integer)
-    date = Column(DateTime)
-    owner = Column(Integer)
-    code = Column(String(50))
-    #sequence = Column(String(50))
+    name = Column(String(50), nullable=True)
+    description = Column(String(150), nullable=True)
+    number_of_levels = Column(Integer, nullable=True)
+    date = Column(DateTime, nullable=True)
+    owner = Column(Integer, nullable=True)
+    code = Column(String(50), nullable=True)
 
     def __init__(self, name, description, number_of_levels, date, owner, code):
         self.name = name
@@ -38,7 +37,6 @@ class Games(Base):
         self.date = date
         self.owner = owner
         self.code = code
-        #self.sequence = sequence
 
 
 class Levels(Base):

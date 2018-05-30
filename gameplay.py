@@ -3,7 +3,6 @@ from flask import Flask, request
 import telebot
 from telebot import types
 import time
-from db_handler import db_handler
 from alchemy import Admins, Levels, Gameplay, Games
 from tcalendar import create_calendar, create_clock
 from configparser import ConfigParser
@@ -40,13 +39,11 @@ def read_config(filename='config.ini', section='bot'):
 cf = read_config()
 
 bot = telebot.TeleBot(cf['token'], threaded=False)
-db = db_handler()
 
 db_admins = Admins
 db_levels = Levels
 db_gameplay = Gameplay
 db_games = Games
-#db_session = session
 #-----------------------------------------------------------------------------------------------------
 # Webhook
 
@@ -64,7 +61,7 @@ def webhook():
     return "ok", 200
 
 # -----------------------------------------------------------------------------------------------------
-
+# SQLAlchemy
 
 engine = create_engine('mysql+mysqlconnector://root:Stavstat12@127.0.0.1:3306/ga2')
 Session = sessionmaker(bind=engine)                           # Инициализация сессии
@@ -72,10 +69,6 @@ session = Session()
 
 
 
-# -----------------------------------------------------------------------------------------------------
-# Блок с параметрами
-
-games = []
 id_game = 0
 
 # -----------------------------------------------------------------------------------------------------
@@ -117,6 +110,17 @@ def start_handler(message):
 # Формирование новой игры
 
 
+@bot.message_handler(commands=['new_game'])
+@admin_handler
+def new_handler(message):
+    global new_game
+    new_game = db_games(None, None, None, None, None, None)
+    session.add(new_game)
+    chat_id = message.chat.id
+    sent = bot.send_message(chat_id, "Введите название игры:")
+    bot.register_next_step_handler(message=sent, callback=setname)
+
+
 def setdescription(message):
     chat_id = message.chat.id
     description = message.text
@@ -131,18 +135,6 @@ def setname(message):
     new_game.name = name
     sent = bot.send_message(chat_id, "Введите описание игры:")
     bot.register_next_step_handler(message=sent, callback=setdescription)
-
-
-@bot.message_handler(commands=['new_game'])
-@admin_handler
-def new_handler(message):
-    global new_game
-    new_game = db_games('None', 'None', 0, '2018-05-24 16:00:00', 0, 'None')
-    session.add(new_game)
-    chat_id = message.chat.id
-    sent = bot.send_message(chat_id, "Введите название игры:")
-    bot.register_next_step_handler(message=sent, callback=setname)
-
 
 # -----------------------------------------------------------------------------------------------------
 # Блок для вывода интерактивного календаря для выбора даты игры и обработки ответа пользователя, время начала игры 00:00
@@ -289,7 +281,7 @@ def set_game(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     for i in range(int(current_game.number_of_levels)):
-        session.add(db_levels(current_game.id, i+1, 'None', 'None', 'None', 'None'))
+        session.add(db_levels(current_game.id, i+1, None, None, None, None))
     session.commit()
     list_of_games = session.query(db_games).filter_by(owner=call.from_user.id).all()
     my_games(chat_id, list_of_games, mess=mess, send=False)
@@ -297,7 +289,6 @@ def set_game(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'anew')
 def anew(call):
-    del games[:]
     chat_id = call.message.chat.id
     sent = bot.edit_message_text(text="Введите название игры:", chat_id=chat_id,message_id=call.message.message_id)
     bot.register_next_step_handler(message=sent, callback=setname)
@@ -305,6 +296,14 @@ def anew(call):
 
 # -----------------------------------------------------------------------------------------------------
 # Вывод списка игр созданных текущим пользователем (администратором)
+
+@bot.message_handler(commands=['my_games'])
+@admin_handler
+def mygame_handler(message):
+    chat_id = message.chat.id
+    list_of_games = session.query(db_games).filter_by(owner=message.from_user.id).all()
+    my_games(chat_id, list_of_games)
+
 
 def my_games(chat_id, list_of_games, send=True, mess=None):
     markup = types.InlineKeyboardMarkup(row_width=3)
@@ -315,15 +314,6 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
         bot.send_message(chat_id, "🎲 Список игр 🎲", reply_markup=markup)
     else:
         bot.edit_message_text(chat_id=chat_id, text="🎲 Список игр 🎲", message_id=mess, reply_markup=markup)
-
-
-@bot.message_handler(commands=['my_games'])
-@admin_handler
-def mygame_handler(message):
-    chat_id = message.chat.id
-    list_of_games = session.query(db_games).filter_by(owner=message.from_user.id).all()
-    my_games(chat_id, list_of_games)
-
 
 # ------------------------------------------------------------------------------------------------------
 # Если нажато "Del", то удалить выбранную игру
@@ -377,28 +367,6 @@ def edit_mess(call):
 # Редактирование игр
 
 
-def update_name(message):
-    chat_id = message.chat.id
-    btn = types.InlineKeyboardButton("Далее", callback_data="edit1" + str(id_game))
-    markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn)
-    game = session.query(db_games).filter_by(id=id_game).first()
-    game.name = message.text
-    session.commit()
-    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
-
-
-def update_dscr(message):
-    chat_id = message.chat.id
-    btn = types.InlineKeyboardButton("Далее", callback_data="edit1" + str(id_game))
-    markup = types.InlineKeyboardMarkup(1)
-    markup.add(btn)
-    game = session.query(db_games).filter_by(id=id_game).first()
-    game.description = message.text
-    session.commit()
-    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
-
-
 # Редактирование имени и описания игры игр
 @bot.callback_query_handler(func=lambda call: call.data[0:6] in ['egname', 'egdscr'])
 def update_param(call):
@@ -412,6 +380,28 @@ def update_param(call):
         bot.register_next_step_handler(message=sent, callback=update_name)
     else:
         bot.register_next_step_handler(message=sent, callback=update_dscr)
+
+
+def update_dscr(message):
+    chat_id = message.chat.id
+    btn = types.InlineKeyboardButton("Далее", callback_data="edit1" + str(id_game))
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    game = session.query(db_games).filter_by(id=id_game).first()
+    game.description = message.text
+    session.commit()
+    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
+
+
+def update_name(message):
+    chat_id = message.chat.id
+    btn = types.InlineKeyboardButton("Далее", callback_data="edit1" + str(id_game))
+    markup = types.InlineKeyboardMarkup(1)
+    markup.add(btn)
+    game = session.query(db_games).filter_by(id=id_game).first()
+    game.name = message.text
+    session.commit()
+    bot.send_message(chat_id=chat_id, text=message.text, reply_markup=markup)
 
 
 # Изменение даты игры
