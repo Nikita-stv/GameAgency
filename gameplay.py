@@ -217,13 +217,14 @@ def datetimes(call):
         dt = datetime.combine(d, t)
         new_game.date = str(dt)
         new_game.owner = call.from_user.id
-        new_game.code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))  # уникальный код игры
+        new_game.code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
         markup = types.InlineKeyboardMarkup(row_width=1)
         itembtnA = types.InlineKeyboardButton("Создать", callback_data="create")
         itembtnB = types.InlineKeyboardButton("Ввести заново", callback_data="anew")
         markup.row(itembtnA, itembtnB)
         bot.edit_message_text(
-            text="Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*\nКод игры: *{}*"
+            text="Название игры: *{}*\nОписание: *{}.*\nКоличество уровней: *{}*\nДата начала игры: *{}*\n"
+                 "Код игры: *{}*"
                  .format(new_game.name, new_game.description, new_game.number_of_levels, new_game.date, new_game.code),
             chat_id=chat_id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         bot.answer_callback_query(call.id, text="")
@@ -367,8 +368,10 @@ def edit_mess(call):
     bot.edit_message_text(text="📣 *Название игры*\n{}\n\n📝 *Описание*\n{}\n\n📅 *Дата начала игры*\n{}\n\n"
                                "📚 *Количество уровней*\n{}\n\n🎛 *Код игры*\n{}\n"
                                "--------------------------------------------------\n⬇️*Нажми, чтобы изменить*⬇️"
-                               .format(property.name, property.description, property.date, property.number_of_levels, property.code),
-                          chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown", disable_web_page_preview=True)
+                               .format(property.name, property.description, property.date, property.number_of_levels,
+                                       property.code),
+                          chat_id=chat_id, message_id=mess, reply_markup=markup, parse_mode="Markdown",
+                          disable_web_page_preview=True)
 
 # ------------------------------------------------------------------------------------------------------
 # Редактирование игр
@@ -553,7 +556,7 @@ def play(message):
             bot.register_next_step_handler(message=sent, callback=level_handler)
         else:
             level = session.query(db_levels).filter_by(game_id=game.id, sn=1).first()                             #
-            session.add(db_gameplay(chat_id=str(chat_id), game_id=game.id, sn_level=1, start_time=None, finish_time=None))
+            session.add(db_gameplay(chat_id=str(chat_id), game_id=game.id, sn_level=1, start_time=datetime.now(), finish_time=None))
             bot.send_message(text="{} \n\n{}".format(game.name, game.description), chat_id=chat_id)
             sent = bot.send_message(text="{} \n\n{}".format(level.header, level.task), chat_id=chat_id)  # вывести заголовок и задание
             bot.register_next_step_handler(message=sent, callback=level_handler)
@@ -569,10 +572,11 @@ def level_handler(message):
     answer = message.text
     game_play = session.query(db_gameplay).filter_by(chat_id=chat_id).first()
     level = session.query(db_levels).filter_by(game_id=game_play.game_id, sn=game_play.sn_level).first()
-    #print(level.answer, answer)
     if str(level.answer) == str(answer):
         pg = session.query(db_games).filter_by(id=level.game_id).first()
         if game_play.sn_level == pg.number_of_levels:
+            game_play.finish_time = datetime.now()
+            session.commit()
             bot.send_message(text="Финиш!", chat_id=chat_id)
         else:
             game_play.sn_level += 1
