@@ -284,7 +284,11 @@ def set_game(call):
         session.add(db_levels(current_game.id, i+1, None, None, None, None))
     session.commit()
     list_of_games = session.query(db_games).filter_by(owner=call.from_user.id).all()
-    my_games(chat_id, list_of_games, mess=mess, send=False)
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    for i in list_of_games:
+        itembtn = types.InlineKeyboardButton(i.name + " 🔧", callback_data="edit1" + str(i.id))
+        markup.row(itembtn)
+    bot.edit_message_text(chat_id=chat_id, text="🎲 Список игр 🎲", message_id=mess, reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: call.data == 'anew')
@@ -301,19 +305,13 @@ def anew(call):
 @admin_handler
 def mygame_handler(message):
     chat_id = message.chat.id
+    mess = message.message_id
     list_of_games = session.query(db_games).filter_by(owner=message.from_user.id).all()
-    my_games(chat_id, list_of_games)
-
-
-def my_games(chat_id, list_of_games, send=True, mess=None):
     markup = types.InlineKeyboardMarkup(row_width=3)
     for i in list_of_games:
         itembtn = types.InlineKeyboardButton(i.name + " 🔧", callback_data="edit1" + str(i.id))
         markup.row(itembtn)
-    if send:
-        bot.send_message(chat_id, "🎲 Список игр 🎲", reply_markup=markup)
-    else:
-        bot.edit_message_text(chat_id=chat_id, text="🎲 Список игр 🎲", message_id=mess, reply_markup=markup)
+    bot.send_message(chat_id=chat_id, text="🎲 Список игр 🎲", reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
 # Если нажато "Del", то удалить выбранную игру
@@ -321,11 +319,16 @@ def my_games(chat_id, list_of_games, send=True, mess=None):
 @bot.callback_query_handler(func=lambda call: call.data[0:3] == 'del')
 def del_game(call):
     chat_id = call.message.chat.id
+    mess = call.message.message_id
     session.query(db_games).filter_by(id=call.data[3:]).delete()
     session.query(db_levels).filter_by(game_id=call.data[3:]).delete()
     session.commit()
     list_of_games = session.query(db_games).filter_by(owner=call.from_user.id).all()
-    my_games(chat_id, list_of_games)
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    for i in list_of_games:
+        itembtn = types.InlineKeyboardButton(i.name + " 🔧", callback_data="edit1" + str(i.id))
+        markup.row(itembtn)
+    bot.edit_message_text(chat_id=chat_id, text="🎲 Список игр 🎲", message_id=mess, reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
 # Если нажато "Back", то изменить текущее сообщение на предыдущее
@@ -336,7 +339,11 @@ def back_mess(call):
     chat_id = call.message.chat.id
     mess = call.message.message_id
     list_of_games = session.query(db_games).filter_by(owner=call.from_user.id).all()
-    my_games(chat_id, list_of_games)
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    for i in list_of_games:
+        itembtn = types.InlineKeyboardButton(i.name + " 🔧", callback_data="edit1" + str(i.id))
+        markup.row(itembtn)
+    bot.edit_message_text(chat_id=chat_id, text="🎲 Список игр 🎲", message_id=mess, reply_markup=markup)
 
 # ------------------------------------------------------------------------------------------------------
 # Интерфейс игр
@@ -541,7 +548,7 @@ def play(message):
     if game:
         g_play = session.query(db_gameplay).filter_by(game_id=game.id, chat_id=chat_id).first() #есть ли игровой процесс для этой игры и чата
         if g_play:
-            current_level = session.query(db_levels).filter_by(id=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
+            current_level = session.query(db_levels).filter_by(sn=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
             sent = bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
             bot.register_next_step_handler(message=sent, callback=level_handler)
         else:
