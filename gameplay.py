@@ -143,7 +143,6 @@ current_shown_dates={}
 
 def get_calendar(message, edit=False):
     number_of_levels = message.text
-    new_game.number_of_levels = number_of_levels
     now = datetime.now()
     chat_id = message.chat.id
     mess = message.message_id
@@ -151,6 +150,7 @@ def get_calendar(message, edit=False):
     current_shown_dates[chat_id] = date #Saving the current date in a dict
     markup = create_calendar(now.year,now.month)
     if edit == False:
+        new_game.number_of_levels = number_of_levels
         bot.send_message(text="Укажите дату начала игры:", chat_id=message.chat.id, reply_markup=markup)
     else:
         bot.edit_message_text(text="Укажите дату начала игры:", chat_id=message.chat.id, message_id=mess, reply_markup=markup)
@@ -417,10 +417,9 @@ def update_name(message):
 # Изменение даты игры
 @bot.callback_query_handler(func=lambda call: call.data[0:6] == 'egdate')
 def update_day(call):
-    global id_game
-    id_game = int(call.data[6:])
+    global new_game
+    new_game = session.query(db_games).filter_by(id=int(call.data[6:])).first()
     get_calendar(call.message, edit=True)
-
 
 # ------------------------------------------------------------------------------------------------------
 # Список уровней !!!
@@ -439,6 +438,8 @@ def list_of_levels(call):
         t = '%s. %s\n' % (i.sn, i.header)
         lev += t
     markup.add(*btns)
+    upload = types.InlineKeyboardButton("Загрузить параметры уровней из файла", callback_data="upload" + call.data[6:])
+    markup.row(upload)
     btn = types.InlineKeyboardButton("🇨🇭", callback_data="addlev" + call.data[6:])
     btn1 = types.InlineKeyboardButton("⬅️", callback_data="edit1" + call.data[6:])
     markup.row(btn1, btn)
@@ -549,21 +550,24 @@ def play(message):
     chat_id = message.chat.id
     game = session.query(db_games).filter_by(code=code).first()     #есть ли игра с таким кодом
     if game:
-        g_play = session.query(db_gameplay).filter_by(game_id=game.id, chat_id=chat_id).first() #есть ли игровой процесс для этой игры и чата
-        if g_play:
-            if g_play.sn_level == game.number_of_levels:
-                bot.send_message(text="Игра пройдена!", chat_id=chat_id)
+        if game.date < datetime.now():
+            g_play = session.query(db_gameplay).filter_by(game_id=game.id, chat_id=chat_id).first() #есть ли игровой процесс для этой игры и чата
+            if g_play:
+                if g_play.sn_level == game.number_of_levels:
+                    bot.send_message(text="Игра пройдена!", chat_id=chat_id)
+                else:
+                    current_level = session.query(db_levels).filter_by(sn=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
+                    sent = bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
+                    bot.register_next_step_handler(message=sent, callback=level_handler)
             else:
-                current_level = session.query(db_levels).filter_by(sn=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
-                sent = bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
+                level = session.query(db_levels).filter_by(game_id=game.id, sn=1).first()                             #
+                session.add(db_gameplay(chat_id=str(chat_id), game_id=game.id, sn_level=1, start_time=datetime.now(), finish_time=None))
+                bot.send_message(text="{} \n\n{}".format(game.name, game.description), chat_id=chat_id)
+                sent = bot.send_message(text="{} \n\n{}".format(level.header, level.task), chat_id=chat_id)  # вывести заголовок и задание
                 bot.register_next_step_handler(message=sent, callback=level_handler)
+            session.commit()
         else:
-            level = session.query(db_levels).filter_by(game_id=game.id, sn=1).first()                             #
-            session.add(db_gameplay(chat_id=str(chat_id), game_id=game.id, sn_level=1, start_time=datetime.now(), finish_time=None))
-            bot.send_message(text="{} \n\n{}".format(game.name, game.description), chat_id=chat_id)
-            sent = bot.send_message(text="{} \n\n{}".format(level.header, level.task), chat_id=chat_id)  # вывести заголовок и задание
-            bot.register_next_step_handler(message=sent, callback=level_handler)
-        session.commit()
+            bot.send_message(text="Игра еще не началась! \nНачало {}!".format(game.date), chat_id=chat_id)
     else:
         #sent = bot.send_message(text="🎛 ВВЕДИТЕ КОД ИГРЫ 🎛", chat_id=chat_id)
         #bot.register_next_step_handler(message=sent, callback=play)
