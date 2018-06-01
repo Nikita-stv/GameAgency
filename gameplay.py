@@ -551,9 +551,12 @@ def play(message):
     if game:
         g_play = session.query(db_gameplay).filter_by(game_id=game.id, chat_id=chat_id).first() #есть ли игровой процесс для этой игры и чата
         if g_play:
-            current_level = session.query(db_levels).filter_by(sn=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
-            sent = bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
-            bot.register_next_step_handler(message=sent, callback=level_handler)
+            if g_play.sn_level == game.number_of_levels:
+                bot.send_message(text="Игра пройдена!", chat_id=chat_id)
+            else:
+                current_level = session.query(db_levels).filter_by(sn=g_play.sn_level, game_id=g_play.game_id).first()      #текущий уровень
+                sent = bot.send_message(text="{} \n\n{}".format(current_level.header, current_level.task), chat_id=chat_id) # вывести заголовок и задание
+                bot.register_next_step_handler(message=sent, callback=level_handler)
         else:
             level = session.query(db_levels).filter_by(game_id=game.id, sn=1).first()                             #
             session.add(db_gameplay(chat_id=str(chat_id), game_id=game.id, sn_level=1, start_time=datetime.now(), finish_time=None))
@@ -570,7 +573,7 @@ def play(message):
 def level_handler(message):
     chat_id = message.chat.id
     answer = message.text
-    game_play = session.query(db_gameplay).filter_by(chat_id=chat_id).first()
+    game_play = session.query(db_gameplay).filter_by(chat_id=chat_id, finish_time=None).first()
     level = session.query(db_levels).filter_by(game_id=game_play.game_id, sn=game_play.sn_level).first()
     if str(level.answer) == str(answer):
         pg = session.query(db_games).filter_by(id=level.game_id).first()
